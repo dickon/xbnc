@@ -9,8 +9,11 @@ import (
 func main() {
 	readConfig()
 	client := CreateClient(conf.Nick, conf.Login, conf.Ident)
-	for _, server := range conf.Servers {
-		client.addServer(server.Host, strconv.Itoa(server.Port))
+	for _, serverConf := range conf.Servers {
+		server := client.addServer(serverConf.Host, strconv.Itoa(serverConf.Port))
+		for _, channel := range serverConf.Channels {
+			server.write <- "JOIN " + channel
+		}
 	}
 	lisn, err := CreateListener(client, conf.Port)
 	if err != nil {
