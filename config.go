@@ -7,15 +7,22 @@ import (
 	"os"
 )
 
-var conf Config
-
 type Config struct {
 	Hostname string
 	Nick     string
 	Login    string
 	Ident    string
 	Port     int
+	Servers  []ServerConfig
 }
+
+type ServerConfig struct {
+	Host     string
+	Port     int
+	Channels []string
+}
+
+var conf Config
 
 func readConfig() {
 	file, err := ioutil.ReadFile("./config.json")
@@ -37,5 +44,11 @@ func readConfig() {
 	if conf.Port == 0 {
 		conf.Port = 1234
 	}
-
+	for i, elem := range conf.Servers {
+		fmt.Printf("Server %d: %s:%d\n", i+1, elem.Host, elem.Port)
+		if elem.Host == "" {
+			fmt.Printf("No host specified on server %d\n", i+1)
+			os.Exit(4)
+		}
+	}
 }
