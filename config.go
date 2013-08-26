@@ -21,6 +21,8 @@ type ServerConfig struct {
 	Host     string
 	Port     int
 	Channels []string
+	Ssl      bool
+	Password string
 }
 
 var conf Config

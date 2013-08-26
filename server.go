@@ -2,9 +2,12 @@ package main
 
 import (
 	"bufio"
+	"crypto/tls"
 	"errors"
 	"fmt"
+	"io"
 	"net"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -13,15 +16,18 @@ type IRCServer struct {
 	client *IRCClient
 
 	connected bool
-	sock      *net.TCPConn
+	sock      io.Closer
 	read      chan *IRCMessage
 	write     chan string
 
 	host     string
+	port     int
 	addr     *net.TCPAddr
 	nick     string
 	login    string
 	ident    string
+	password string
+	ssl      bool
 	channels map[string]*IRCChannel
 }
 
@@ -30,28 +36,41 @@ type IRCChannel struct {
 	active bool
 }
 
-func CreateServer(client *IRCClient, host, port, nick, login, ident string) (*IRCServer, error) {
+func CreateServer(client *IRCClient, host string, port int, nick, login, ident, password string, ssl bool) (*IRCServer, error) {
 	read := make(chan *IRCMessage, 1000)
 	write := make(chan string, 1000)
 	channels := make(map[string]*IRCChannel)
-	addr, err := net.ResolveTCPAddr("tcp4", host+":"+port)
+	addr, err := net.ResolveTCPAddr("tcp4", host+":"+strconv.Itoa(port))
 	if err != nil {
 		return nil, err
 	}
-	return &IRCServer{client, false, nil, read, write, host, addr, nick, login, ident, channels}, nil
+	return &IRCServer{client, false, nil, read, write, host, port, addr, nick, login, ident, password, ssl, channels}, nil
 }
 
 func (srv *IRCServer) Connect() error {
 	if srv.connected {
 		return nil
 	}
-	sock, err := net.DialTCP("tcp4", nil, srv.addr)
-	if err != nil {
-		return err
+	var reader *bufio.Reader
+	var writer *bufio.Writer
+	if srv.ssl {
+		config := &tls.Config{InsecureSkipVerify: true}
+		conn, err := tls.Dial("tcp", srv.host+":"+strconv.Itoa(srv.port), config)
+		if err != nil {
+			return err
+		}
+		reader = bufio.NewReader(conn)
+		writer = bufio.NewWriter(conn)
+		srv.sock = conn
+	} else {
+		sock, err := net.DialTCP("tcp4", nil, srv.addr)
+		if err != nil {
+			return err
+		}
+		reader = bufio.NewReader(sock)
+		writer = bufio.NewWriter(sock)
+		srv.sock = sock
 	}
-	reader := bufio.NewReader(sock)
-	writer := bufio.NewWriter(sock)
-	srv.sock = sock
 	srv.connected = true
 
 	go func() {
@@ -80,6 +99,9 @@ func (srv *IRCServer) Connect() error {
 		}
 	}()
 
+	if srv.password != "" {
+		srv.write <- "PASS " + srv.password
+	}
 	srv.write <- "NICK " + srv.nick
 	srv.write <- "USER " + srv.login + " 0 * :XBNC"
 

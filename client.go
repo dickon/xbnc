@@ -58,7 +58,11 @@ func (client *IRCClient) handler() {
 		} else if msg.command == "JOIN" {
 			host, channel := client.channelToHost(msg.param[0])
 			if len(host) > 0 {
-				server := client.addServer(host, msg.param[1])
+				port, err := strconv.Atoi(msg.param[1])
+				if err != nil {
+					client.write <- ":-!xbnc@xbnc PRIVMSG #xbnc: Could not decode port " + msg.param[1]
+				}
+				server := client.addServer(host, port, "", false)
 				if server != nil {
 					if len(channel) > 0 {
 						server.write <- "JOIN " + channel
@@ -172,15 +176,15 @@ func (client *IRCClient) kickChannel(name, reason string) {
 	}
 }
 
-func (client *IRCClient) addServer(host, port string) *IRCServer {
+func (client *IRCClient) addServer(host string, port int, password string, ssl bool) *IRCServer {
 	server, exists := client.servers[host]
 	if exists {
 		return server
 	}
-	if len(port) == 0 {
-		port = "6667"
+	if port == 0 {
+		port = 6667
 	}
-	srv, err := CreateServer(client, host, port, client.nick, client.login, "x8rx8r12")
+	srv, err := CreateServer(client, host, port, client.nick, client.login, "x8rx8r12", password, ssl)
 	if err != nil {
 		fmt.Println(err)
 		client.write <- ":-!xbnc@xbnc PRIVMSG #xbnc :Error: " + err.Error()

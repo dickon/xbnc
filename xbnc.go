@@ -3,14 +3,13 @@ package main
 import (
 	"fmt"
 	"os"
-	"strconv"
 )
 
 func main() {
 	readConfig()
 	client := CreateClient(conf.Nick, conf.Login, conf.Ident)
 	for _, serverConf := range conf.Servers {
-		server := client.addServer(serverConf.Host, strconv.Itoa(serverConf.Port))
+		server := client.addServer(serverConf.Host, serverConf.Port, serverConf.Password, serverConf.Ssl)
 		for _, channel := range serverConf.Channels {
 			server.write <- "JOIN " + channel
 		}

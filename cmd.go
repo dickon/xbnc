@@ -10,10 +10,11 @@ func (client *IRCClient) handleXBNCCMD(msg string) {
 	if cmd.command == "SERVER" {
 		cmd2 := strings.ToUpper(cmd.param[0])
 		if cmd2 == "ADD" {
-			if len(cmd.param[1]) > 0 {
-				client.addServer(strings.ToLower(cmd.param[1]), cmd.param[2])
+			port, err := strconv.Atoi(cmd.param[2])
+			if err == nil && len(cmd.param[1]) > 0 {
+				client.addServer(strings.ToLower(cmd.param[1]), port, "", false)
 			} else {
-				client.write <- ":-!xbnc@xbnc PRIVMSG #xbnc :Usage: SERVER ADD <host> [ <port> ]"
+				client.write <- ":-!xbnc@xbnc PRIVMSG #xbnc :Usage: SERVER ADD <host> <port>"
 			}
 		} else if cmd2 == "REMOVE" {
 			if len(cmd.param[1]) > 0 {
@@ -36,7 +37,7 @@ func (client *IRCClient) handleXBNCCMD(msg string) {
 					break
 				}
 			}
-			server := client.addServer(host, "6667")
+			server := client.addServer(host, 6667, "", false)
 			if server != nil {
 				server.write <- cmd.command + " " + cmd.param[1]
 			}
