@@ -73,6 +73,7 @@ func (srv *IRCServer) Connect() error {
 			_, err := writer.WriteString(str + "\r\n")
 			fmt.Printf("writes: %s\n", str)
 			if err != nil {
+				fmt.Printf("server write error %v\n", err)
 				continue
 			}
 			writer.Flush()
