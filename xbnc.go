@@ -3,12 +3,15 @@ package main
 import (
 	"fmt"
 	"os"
+	"strconv"
 )
 
 func main() {
 	readConfig()
 	client := CreateClient(conf.Nick, conf.Login, conf.Ident)
-
+	for _, server := range conf.Servers {
+		client.addServer(server.Host, strconv.Itoa(server.Port))
+	}
 	lisn, err := CreateListener(client, conf.Port)
 	if err != nil {
 		fmt.Println(err)
