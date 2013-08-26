@@ -14,6 +14,7 @@ type Config struct {
 	Nick     string
 	Login    string
 	Ident    string
+	Port     int
 }
 
 func main() {
@@ -28,12 +29,18 @@ func main() {
 		os.Exit(2)
 	}
 	if conf.Hostname == "" {
-		fmt.Println("Server host name unspecified")
-		os.Exit(3)
+		if conf.Hostname, err = os.Hostname(); err != nil {
+			fmt.Printf("Unable to determinte hostname: %v\n", err)
+			os.Exit(3)
+		}
 	}
+	if conf.Port == 0 {
+		conf.Port = 1234
+	}
+
 	client := CreateClient(conf.Nick, conf.Login, conf.Ident)
 
-	lisn, err := CreateListener(client, 1234)
+	lisn, err := CreateListener(client, conf.Port)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(4)
