@@ -10,7 +10,6 @@ func main() {
 	readConfig()
 	client := CreateClient(reg, conf.Nick, conf.Login, conf.Ident)
 	for _, serverConf := range conf.Servers {
-		// TODO: why not just pass serverConf to addServer?
 		server := client.addServer(*serverConf)
 		if server == nil {
 			fmt.Printf("failed to connect to %v", serverConf)
