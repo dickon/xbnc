@@ -63,7 +63,7 @@ func (client *IRCClient) handler() {
 				if err != nil {
 					client.write <- ":-!xbnc@xbnc PRIVMSG #xbnc: Could not decode port " + msg.param[1]
 				}
-				server := client.addServer(host, port, "", false)
+				server := client.addServer(ServerConfig{host, host, port, false, "", client.nick, client.login, client.ident, make([]string, 0)})
 				if server != nil {
 					if len(channel) > 0 {
 						server.write <- "JOIN " + channel
@@ -177,15 +177,12 @@ func (client *IRCClient) kickChannel(name, reason string) {
 	}
 }
 
-func (client *IRCClient) addServer(host string, port int, password string, ssl bool) *IRCServer {
-	server, exists := client.servers[host]
+func (client *IRCClient) addServer(sc ServerConfig) *IRCServer {
+	server, exists := client.servers[sc.Host]
 	if exists {
 		return server
 	}
-	if port == 0 {
-		port = 6667
-	}
-	srv, err := CreateServer(client.registrar, client, host, port, client.nick, client.login, "x8rx8r12", password, ssl)
+	srv, err := CreateServer(client.registrar, client, sc)
 	if err != nil {
 		fmt.Println(err)
 		client.write <- ":-!xbnc@xbnc PRIVMSG #xbnc :Error: " + err.Error()
@@ -197,9 +194,9 @@ func (client *IRCClient) addServer(host string, port int, password string, ssl b
 		client.write <- ":-!xbnc@xbnc PRIVMSG #xbnc :Error: " + err.Error()
 		return nil
 	}
-	client.servers[host] = srv
-	client.write <- ":-!xbnc@xbnc PRIVMSG #xbnc :Connected to \"" + host + "\" successfully"
-	client.write <- ":" + client.nick + "!" + client.login + "@xbnc JOIN :" + client.hostToChannel(host, "")
+	client.servers[sc.Host] = srv
+	client.write <- ":-!xbnc@xbnc PRIVMSG #xbnc :Connected to \"" + sc.Host + "\" successfully"
+	client.write <- ":" + client.nick + "!" + client.login + "@xbnc JOIN :" + client.hostToChannel(sc.Host, "")
 	return srv
 }
 
@@ -207,7 +204,7 @@ func (client *IRCClient) removeServer(host string) {
 	server, exists := client.servers[host]
 	if exists {
 		for _, channel := range server.channels {
-			client.write <- ":" + client.nick + "!" + client.login + "@xbnc PART " + client.hostToChannel(server.host, channel.name) + " :Leaving"
+			client.write <- ":" + client.nick + "!" + client.login + "@xbnc PART " + client.hostToChannel(server.serverConfig.Host, channel.name) + " :Leaving"
 		}
 		server.Close()
 		client.write <- ":" + client.nick + "!" + client.login + "@xbnc PART :" + client.hostToChannel(host, "")

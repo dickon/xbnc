@@ -12,7 +12,8 @@ func (client *IRCClient) handleXBNCCMD(msg string) {
 		if cmd2 == "ADD" {
 			port, err := strconv.Atoi(cmd.param[2])
 			if err == nil && len(cmd.param[1]) > 0 {
-				client.addServer(strings.ToLower(cmd.param[1]), port, "", false)
+				host := strings.ToLower(cmd.param[1])
+				client.addServer(ServerConfig{host, host, port, false, "", client.nick, client.login, client.ident, make([]string, 0)})
 			} else {
 				client.write <- ":-!xbnc@xbnc PRIVMSG #xbnc :Usage: SERVER ADD <host> <port>"
 			}
@@ -37,7 +38,7 @@ func (client *IRCClient) handleXBNCCMD(msg string) {
 					break
 				}
 			}
-			server := client.addServer(host, 6667, "", false)
+			server := client.addServer(ServerConfig{host, host, 6667, false, "", client.nick, client.login, client.ident, make([]string, 0)})
 			if server != nil {
 				server.write <- cmd.command + " " + cmd.param[1]
 			}
@@ -57,7 +58,7 @@ func (client *IRCClient) handleXBNCCMD(msg string) {
 }
 
 func (srv *IRCServer) handleServerCMD(msg string) {
-	serverchan := srv.client.hostToChannel(srv.host, "")
+	serverchan := srv.client.hostToChannel(srv.serverConfig.Host, "")
 	cmd := ParseMessage(msg)
 	if cmd.command == "JOIN" || cmd.command == "PART" {
 		if len(cmd.param[0]) > 0 {

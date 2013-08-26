@@ -10,19 +10,23 @@ import (
 
 type Config struct {
 	Hostname string
-	Nick     string
-	Login    string
-	Ident    string
 	Port     int
-	Servers  []ServerConfig
+	Servers  []*ServerConfig
+	Nick     string // client facing
+	Login    string // client facing
+	Ident    string // client facing
 }
 
 type ServerConfig struct {
+	Name     string
 	Host     string
 	Port     int
-	Channels []string
 	Ssl      bool
 	Password string
+	Nick     string
+	Login    string
+	Ident    string
+	Channels []string
 }
 
 var conf Config
@@ -44,9 +48,6 @@ func readConfig() {
 			os.Exit(3)
 		}
 	}
-	if conf.Port == 0 {
-		conf.Port = 1234
-	}
 	if conf.Login == "" {
 		u, err := user.Current()
 		if err != nil {
@@ -55,8 +56,29 @@ func readConfig() {
 		}
 		conf.Login = u.Username
 	}
+	if conf.Port == 0 {
+		conf.Port = 1234
+	}
+	seen := make(map[string]bool)
 	for i, elem := range conf.Servers {
-		fmt.Printf("Server %d: %s:%d\n", i+1, elem.Host, elem.Port)
+		if elem.Name == "" {
+			elem.Name = elem.Host
+		}
+		if elem.Login == "" {
+			u, err := user.Current()
+			if err != nil {
+				fmt.Printf("Unable to determinte user name: %v\n", err)
+				os.Exit(4)
+			}
+			elem.Login = u.Username
+		}
+		_, already := seen[elem.Name]
+		if already {
+			fmt.Printf("Server name %s reused\n", elem.Name)
+			os.Exit(5)
+		}
+		seen[elem.Name] = true
+		fmt.Printf("Server %d: %v\n", i+1, elem)
 		if elem.Host == "" {
 			fmt.Printf("No host specified on server %d\n", i+1)
 			os.Exit(4)

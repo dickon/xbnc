@@ -13,6 +13,7 @@ type Registrar struct {
 type Message struct {
 	sequenceNumber int
 	channel        string
+	server         string
 	text           string
 	time           time.Time
 }
@@ -28,12 +29,11 @@ func CreateRegistrar() *Registrar {
 			reg.messages = append(reg.messages, mesrec)
 			fmt.Printf("recorded %v\n", mesrec)
 		}
-
 	}()
 	return reg
 }
 
-func (reg *Registrar) Add(message, channel string) {
-	mesrec := Message{0, message, channel, time.Now()}
+func (reg *Registrar) Add(message, channel, server string) {
+	mesrec := Message{0, message, channel, server, time.Now()}
 	reg.recorder <- mesrec
 }
