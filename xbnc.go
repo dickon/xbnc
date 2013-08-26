@@ -6,8 +6,9 @@ import (
 )
 
 func main() {
+	reg := CreateRegistrar()
 	readConfig()
-	client := CreateClient(conf.Nick, conf.Login, conf.Ident)
+	client := CreateClient(reg, conf.Nick, conf.Login, conf.Ident)
 	for _, serverConf := range conf.Servers {
 		server := client.addServer(serverConf.Host, serverConf.Port, serverConf.Password, serverConf.Ssl)
 		for _, channel := range serverConf.Channels {

@@ -13,7 +13,8 @@ import (
 )
 
 type IRCServer struct {
-	client *IRCClient
+	registrar *Registrar
+	client    *IRCClient
 
 	connected bool
 	sock      io.Closer
@@ -36,7 +37,7 @@ type IRCChannel struct {
 	active bool
 }
 
-func CreateServer(client *IRCClient, host string, port int, nick, login, ident, password string, ssl bool) (*IRCServer, error) {
+func CreateServer(registrar *Registrar, client *IRCClient, host string, port int, nick, login, ident, password string, ssl bool) (*IRCServer, error) {
 	read := make(chan *IRCMessage, 1000)
 	write := make(chan string, 1000)
 	channels := make(map[string]*IRCChannel)
@@ -44,7 +45,7 @@ func CreateServer(client *IRCClient, host string, port int, nick, login, ident, 
 	if err != nil {
 		return nil, err
 	}
-	return &IRCServer{client, false, nil, read, write, host, port, addr, nick, login, ident, password, ssl, channels}, nil
+	return &IRCServer{registrar, client, false, nil, read, write, host, port, addr, nick, login, ident, password, ssl, channels}, nil
 }
 
 func (srv *IRCServer) Connect() error {
@@ -193,6 +194,7 @@ func (srv *IRCServer) handler() {
 			channel := srv.client.hostToChannel(srv.host, name)
 			srv.client.joinChannel(channel, false)
 			srv.client.write <- ":" + msg.fullsource + " PRIVMSG " + channel + " :" + msg.message
+			srv.registrar.Add(msg.message, channel)
 		} else if msg.command == "NOTICE" {
 			srv.client.write <- msg.raw
 			if len(srv.ident) > 0 && msg.source == "NickServ" && strings.HasPrefix(msg.message, "This nickname is registered and protected") {

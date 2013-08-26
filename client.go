@@ -8,6 +8,7 @@ import (
 )
 
 type IRCClient struct {
+	registrar *Registrar
 	connected bool
 	sock      *net.TCPConn
 	read      chan *IRCMessage
@@ -23,7 +24,7 @@ type IRCClient struct {
 	nextId    chan int
 }
 
-func CreateClient(nick, login, ident string) *IRCClient {
+func CreateClient(registrar *Registrar, nick, login, ident string) *IRCClient {
 	read := make(chan *IRCMessage, 1000)
 	write := make(chan string, 1000)
 	channels := make(map[string]*IRCChannel)
@@ -33,7 +34,7 @@ func CreateClient(nick, login, ident string) *IRCClient {
 	for i := 1; i <= 100; i++ {
 		nextId <- i
 	}
-	return &IRCClient{false, nil, read, write, channels, nick, login, ident, servers, serverIds, nextId}
+	return &IRCClient{registrar, false, nil, read, write, channels, nick, login, ident, servers, serverIds, nextId}
 }
 
 func (client *IRCClient) handler() {
@@ -184,7 +185,7 @@ func (client *IRCClient) addServer(host string, port int, password string, ssl b
 	if port == 0 {
 		port = 6667
 	}
-	srv, err := CreateServer(client, host, port, client.nick, client.login, "x8rx8r12", password, ssl)
+	srv, err := CreateServer(client.registrar, client, host, port, client.nick, client.login, "x8rx8r12", password, ssl)
 	if err != nil {
 		fmt.Println(err)
 		client.write <- ":-!xbnc@xbnc PRIVMSG #xbnc :Error: " + err.Error()
