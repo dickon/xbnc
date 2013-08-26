@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"os"
 )
 
 var conf Config
@@ -19,20 +20,23 @@ func main() {
 	file, err := ioutil.ReadFile("./config.json")
 	if err != nil {
 		fmt.Printf("Config file error: %v\n", err)
-		return
+		os.Exit(1)
 	}
 	err = json.Unmarshal(file, &conf)
 	if err != nil {
 		fmt.Printf("Config file error: %v\n", err)
-		return
+		os.Exit(2)
 	}
-
+	if conf.Hostname == "" {
+		fmt.Println("Server host name unspecified")
+		os.Exit(3)
+	}
 	client := CreateClient(conf.Nick, conf.Login, conf.Ident)
 
 	lisn, err := CreateListener(client, 1234)
 	if err != nil {
 		fmt.Println(err)
-		return
+		os.Exit(4)
 	}
 
 	/*reader := bufio.NewReader(os.Stdin)
