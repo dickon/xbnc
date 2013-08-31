@@ -150,10 +150,11 @@ func (srv *IRCServer) handler() {
 					srv.channels[msg.message] = &IRCChannel{msg.message, true}
 				}
 				srv.client.joinChannel(srv.client.hostToChannel(srv.serverConfig.Host, msg.message), true)
+				srv.registrar.Add(srv.serverConfig.Name, &MyJoin{msg.message})
 			} else {
 				// another user joined a channel
 				srv.client.write <- ":" + msg.fullsource + " JOIN :" + srv.client.hostToChannel(srv.serverConfig.Host, msg.message)
-				srv.registrar.Add(srv.serverConfig.Name, &Join{msg.message, msg.fullsource})
+				srv.registrar.Add(srv.serverConfig.Name, &OtherJoin{msg.message, msg.fullsource})
 			}
 		} else if msg.command == "PART" {
 			if msg.source == srv.serverConfig.Nick {

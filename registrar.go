@@ -20,13 +20,21 @@ func (message Message) Render() string {
 	return message.channel + ":" + message.author + ">" + message.text
 }
 
-type Join struct {
+type OtherJoin struct {
 	channel string
 	author  string
 }
 
-func (join Join) Render() string {
+func (join OtherJoin) Render() string {
 	return join.channel + " joined by " + join.author
+}
+
+type MyJoin struct {
+	channel string
+}
+
+func (join MyJoin) Render() string {
+	return "joined " + join.channel
 }
 
 type Inspecter interface {
