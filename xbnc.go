@@ -20,25 +20,16 @@ func main() {
 			server.write <- "JOIN " + channel
 		}
 	}
-	lisn, err := CreateListener(reg, client, conf.Port)
+	/* lisn, err := CreateListener(reg, client, conf.Port)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(4)
-	}
-
-	/*reader := bufio.NewReader(os.Stdin)
-	  for {
-	    str, err := reader.ReadString('\n')
-	    if err != nil {
-	      fmt.Printf("stdin: %s\n", err)
-	    }
-	    srv.write <- "PRIVMSG #bnctest :" + str[0:len(str)-1]
-	  }*/
+	} 
 
 	err = lisn.Listen()
 	if err != nil {
 		fmt.Println(err)
 		return
-	}
+	}*/
 	<-make(chan int)
 }
