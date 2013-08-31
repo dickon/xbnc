@@ -151,6 +151,7 @@ func (srv *IRCServer) handler() {
 				}
 				srv.client.joinChannel(srv.client.hostToChannel(srv.serverConfig.Host, msg.message), true)
 			} else {
+				// another user joined a channel
 				srv.client.write <- ":" + msg.fullsource + " JOIN :" + srv.client.hostToChannel(srv.serverConfig.Host, msg.message)
 			}
 		} else if msg.command == "PART" {
