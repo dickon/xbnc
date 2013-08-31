@@ -37,6 +37,16 @@ func (join MyJoin) Render() string {
 	return "joined " + join.channel
 }
 
+type TopicSet struct {
+	channel string
+	text    string
+	author  string
+}
+
+func (topic TopicSet) Render() string {
+	return topic.channel + " topic set to " + topic.text + " by " + topic.author
+}
+
 type Inspecter interface {
 	Render() string
 }

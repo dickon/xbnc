@@ -12,15 +12,16 @@ type IRCListener struct {
 	listening bool
 	addr      *net.TCPAddr
 
-	client *IRCClient
+	client    *IRCClient
+	registrar *Registrar
 }
 
-func CreateListener(client *IRCClient, port int) (*IRCListener, error) {
+func CreateListener(registrar *Registrar, client *IRCClient, port int) (*IRCListener, error) {
 	addr, err := net.ResolveTCPAddr("tcp4", ":"+strconv.Itoa(port))
 	if err != nil {
 		return nil, err
 	}
-	return &IRCListener{false, addr, client}, nil
+	return &IRCListener{false, addr, client, registrar}, nil
 }
 
 func (lisn *IRCListener) Listen() error {

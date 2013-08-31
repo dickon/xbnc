@@ -221,6 +221,7 @@ func (srv *IRCServer) handler() {
 			srv.client.write <- msg.raw
 		} else if msg.command == "TOPIC" {
 			srv.client.write <- ":" + msg.fullsource + " TOPIC " + srv.client.hostToChannel(srv.serverConfig.Host, msg.param[0]) + " :" + msg.message
+			srv.record(&TopicSet{msg.param[0], msg.message, msg.fullsource})
 		} else if msg.command == "CTCP_VERSION" {
 			srv.client.write <- ":" + msg.source + "!xbnc@xbnc PRIVMSG " + srv.client.hostToChannel(srv.serverConfig.Host, "") + " :Received CTCP VERSION: " + msg.raw
 			srv.write <- "NOTICE " + msg.source + " :\x01XBNC 1.0: Created By xthexder\x01"

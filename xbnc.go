@@ -20,7 +20,7 @@ func main() {
 			server.write <- "JOIN " + channel
 		}
 	}
-	lisn, err := CreateListener(client, conf.Port)
+	lisn, err := CreateListener(reg, client, conf.Port)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(4)
