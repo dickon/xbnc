@@ -22,17 +22,17 @@ func main() {
 			server.write <- "JOIN " + channel
 		}
 	}
-	/* lisn, err := CreateListener(reg, client, conf.Port)
+	lisn, err := CreateListener(reg, client, conf.Port)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(4)
-	} 
+	}
 
 	err = lisn.Listen()
 	if err != nil {
 		fmt.Println(err)
 		return
-	}*/
+	}
 
 	go func() {
 		time.Sleep(5000 * time.Millisecond)

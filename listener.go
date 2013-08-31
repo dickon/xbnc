@@ -2,15 +2,13 @@ package main
 
 import (
 	"bufio"
-	"errors"
 	"fmt"
 	"net"
 	"strconv"
 )
 
 type IRCListener struct {
-	listening bool
-	addr      *net.TCPAddr
+	addr *net.TCPAddr
 
 	client    *IRCClient
 	registrar *Registrar
@@ -21,68 +19,54 @@ func CreateListener(registrar *Registrar, client *IRCClient, port int) (*IRCList
 	if err != nil {
 		return nil, err
 	}
-	return &IRCListener{false, addr, client, registrar}, nil
+	return &IRCListener{addr, client, registrar}, nil
+}
+
+type ClientConnection struct {
+	conn      *net.TCPConn
+	reader    *bufio.Reader
+	writer    *bufio.Writer
+	regnotify chan Entry
+	registrar *Registrar
+}
+
+func (cc ClientConnection) Start() {
+	cc.registrar.Subscribe(cc.regnotify)
+
+	go func() {
+
+		for {
+			entry := <-cc.regnotify
+			str := fmt.Sprintf("%d:%s\r\n", entry.sequenceNumber, entry.payload.Render())
+			n, err := cc.writer.WriteString(str)
+			if err != nil {
+				fmt.Printf("writestring via registrar %d error: %v\n", n, err)
+			}
+			fmt.Printf("writec via registrar: %s\n", str)
+			cc.writer.Flush()
+		}
+	}()
+
 }
 
 func (lisn *IRCListener) Listen() error {
-	if lisn.client == nil {
-		return errors.New("Client was not created!")
-	}
-	if lisn.client.sock != nil || lisn.listening {
-		return nil
-	}
 
 	listener, err := net.ListenTCP("tcp4", lisn.addr)
 	if err != nil {
 		return err
 	}
 
-	lisn.listening = true
-
 	fmt.Printf("Listening for TCP on %d\n", lisn.addr.Port)
 
 	go func() {
-		for lisn.listening {
+		for {
 			conn, err := listener.AcceptTCP()
 			if err != nil {
 				fmt.Printf("Listen error: %v\n", err)
 				continue
 			}
 
-			lisn.client.sock = conn
-			lisn.client.connected = true
-			lisn.listening = false
-
-			reader := bufio.NewReader(conn)
-			writer := bufio.NewWriter(conn)
-
-			go func() {
-				for lisn.client != nil && lisn.client.connected {
-					str, err := reader.ReadString('\n')
-					if err != nil {
-						fmt.Printf("readc error: %v\n", err)
-						break
-					}
-
-					msg := ParseMessage(str[0 : len(str)-2]) // Cut off the \r\n and parse
-					fmt.Printf("readc: %s\n", msg.raw)
-					lisn.client.read <- msg
-				}
-			}()
-			go func() {
-				for lisn.client != nil && lisn.client.connected {
-					str := <-lisn.client.write
-					_, err := writer.WriteString(str + "\r\n")
-					if err != nil {
-						fmt.Printf("writec error: %v\n", err)
-						break
-					}
-					fmt.Printf("writec: %s\n", str)
-					writer.Flush()
-				}
-			}()
-			go lisn.client.handler()
-			break
+			(ClientConnection{conn, bufio.NewReader(conn), bufio.NewWriter(conn), make(chan Entry, 100), lisn.registrar}).Start()
 		}
 	}()
 	return nil
