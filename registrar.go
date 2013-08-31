@@ -17,7 +17,16 @@ type Message struct {
 }
 
 func (message Message) Render() string {
-	return message.channel + ":" + message.author + ":" + message.text
+	return message.channel + ":" + message.author + ">" + message.text
+}
+
+type Join struct {
+	channel string
+	author  string
+}
+
+func (join Join) Render() string {
+	return join.channel + " joined by " + join.author
 }
 
 type Inspecter interface {
@@ -46,6 +55,6 @@ func CreateRegistrar() *Registrar {
 	return reg
 }
 
-func (reg *Registrar) Add(server string, message *Message) {
-	reg.recorder <- Entry{0, time.Now(), server, *message}
+func (reg *Registrar) Add(server string, payload Inspecter) {
+	reg.recorder <- Entry{0, time.Now(), server, payload}
 }
