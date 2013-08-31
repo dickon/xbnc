@@ -20,11 +20,15 @@ func (message Message) Render() string {
 	return message.channel + ":" + message.author + ":" + message.text
 }
 
+type Inspecter interface {
+	Render() string
+}
+
 type Entry struct {
 	sequenceNumber int
 	time           time.Time
 	server         string
-	message        *Message
+	payload        Inspecter
 }
 
 func CreateRegistrar() *Registrar {
@@ -36,12 +40,12 @@ func CreateRegistrar() *Registrar {
 			entry := <-reg.recorder
 			entry.sequenceNumber = len(reg.entries)
 			reg.entries = append(reg.entries, entry)
-			fmt.Printf("recorded %d:%s\n", entry.sequenceNumber, entry.message.Render())
+			fmt.Printf("recorded %d:%s\n", entry.sequenceNumber, entry.payload.Render())
 		}
 	}()
 	return reg
 }
 
 func (reg *Registrar) Add(server string, message *Message) {
-	reg.recorder <- Entry{0, time.Now(), server, message}
+	reg.recorder <- Entry{0, time.Now(), server, *message}
 }
