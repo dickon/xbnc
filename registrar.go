@@ -16,6 +16,10 @@ type Message struct {
 	author  string
 }
 
+func (message Message) Render() string {
+	return message.channel + ":" + message.author + ":" + message.text
+}
+
 type Entry struct {
 	sequenceNumber int
 	time           time.Time
@@ -32,7 +36,7 @@ func CreateRegistrar() *Registrar {
 			entry := <-reg.recorder
 			entry.sequenceNumber = len(reg.entries)
 			reg.entries = append(reg.entries, entry)
-			fmt.Printf("recorded %v\n", entry)
+			fmt.Printf("recorded %d:%s\n", entry.sequenceNumber, entry.message.Render())
 		}
 	}()
 	return reg
