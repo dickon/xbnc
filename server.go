@@ -193,7 +193,7 @@ func (srv *IRCServer) handler() {
 			channel := srv.client.hostToChannel(srv.serverConfig.Host, name)
 			srv.client.joinChannel(channel, false)
 			srv.client.write <- ":" + msg.fullsource + " PRIVMSG " + channel + " :" + msg.message
-			srv.registrar.Add(msg.message, channel, srv.serverConfig.Name)
+			srv.registrar.Add(msg.message, channel, srv.serverConfig.Name, msg.fullsource)
 		} else if msg.command == "NOTICE" {
 			srv.client.write <- msg.raw
 			if len(srv.serverConfig.Ident) > 0 && msg.source == "NickServ" && strings.HasPrefix(msg.message, "This nickname is registered and protected") {

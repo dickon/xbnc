@@ -15,6 +15,7 @@ type Message struct {
 	channel        string
 	server         string
 	text           string
+	author         string
 	time           time.Time
 }
 
@@ -33,7 +34,7 @@ func CreateRegistrar() *Registrar {
 	return reg
 }
 
-func (reg *Registrar) Add(message, channel, server string) {
-	mesrec := Message{0, message, channel, server, time.Now()}
+func (reg *Registrar) Add(message, channel, server, author string) {
+	mesrec := Message{0, message, channel, server, author, time.Now()}
 	reg.recorder <- mesrec
 }
