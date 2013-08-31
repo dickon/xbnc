@@ -3,10 +3,12 @@ package main
 import (
 	"fmt"
 	"os"
+	"time"
 )
 
 func main() {
 	reg := CreateRegistrar()
+	reg.AddNotifier("primary")
 	readConfig()
 	client := CreateClient(reg, conf.Nick, conf.Login, conf.Ident)
 	for _, serverConf := range conf.Servers {
@@ -31,5 +33,10 @@ func main() {
 		fmt.Println(err)
 		return
 	}*/
+
+	go func() {
+		time.Sleep(5000 * time.Millisecond)
+		reg.AddNotifier("later")
+	}()
 	<-make(chan int)
 }

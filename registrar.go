@@ -5,11 +5,6 @@ import (
 	"time"
 )
 
-type Registrar struct {
-	entries  []Entry
-	recorder chan Entry
-}
-
 type Message struct {
 	channel string
 	text    string
@@ -58,21 +53,49 @@ type Entry struct {
 	payload        Inspecter
 }
 
+type Registrar struct {
+	entries   []Entry
+	notifiers []chan Entry
+	recorder  chan Entry
+}
+
 func CreateRegistrar() *Registrar {
 	entries := make([]Entry, 0, 100)
+	notifiers := make([]chan Entry, 0, 100)
 	recorder := make(chan Entry, 100)
-	reg := &Registrar{entries, recorder}
+	reg := &Registrar{entries, notifiers, recorder}
 	go func() {
 		for {
 			entry := <-reg.recorder
 			entry.sequenceNumber = len(reg.entries)
 			reg.entries = append(reg.entries, entry)
-			fmt.Printf("recorded %d:%s\n", entry.sequenceNumber, entry.payload.Render())
+			for _, notifier := range reg.notifiers {
+				notifier <- entry
+			}
 		}
 	}()
+
 	return reg
 }
 
 func (reg *Registrar) Add(server string, payload Inspecter) {
 	reg.recorder <- Entry{0, time.Now(), server, payload}
+}
+
+func (reg *Registrar) Subscribe(notifier chan Entry) {
+	reg.notifiers = append(reg.notifiers, notifier)
+	for _, entry := range reg.entries {
+		notifier <- entry
+	}
+}
+
+func (reg *Registrar) AddNotifier(prefix string) {
+	echonotify := make(chan Entry, 100)
+	go func() {
+		for {
+			entry := <-echonotify
+			fmt.Printf("%s recorded %d:%s\n", prefix, entry.sequenceNumber, entry.payload.Render())
+		}
+	}()
+	reg.Subscribe(echonotify)
 }
