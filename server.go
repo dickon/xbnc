@@ -130,6 +130,10 @@ func (srv *IRCServer) Connect() error {
 	return nil
 }
 
+func (srv *IRCServer) record(payload Inspecter) {
+	srv.registrar.Add(srv.serverConfig.Name, payload)
+}
+
 func (srv *IRCServer) handler() {
 	for srv.connected {
 		msg := <-srv.read
@@ -150,11 +154,11 @@ func (srv *IRCServer) handler() {
 					srv.channels[msg.message] = &IRCChannel{msg.message, true}
 				}
 				srv.client.joinChannel(srv.client.hostToChannel(srv.serverConfig.Host, msg.message), true)
-				srv.registrar.Add(srv.serverConfig.Name, &MyJoin{msg.message})
+				srv.record(&MyJoin{msg.message})
 			} else {
 				// another user joined a channel
 				srv.client.write <- ":" + msg.fullsource + " JOIN :" + srv.client.hostToChannel(srv.serverConfig.Host, msg.message)
-				srv.registrar.Add(srv.serverConfig.Name, &OtherJoin{msg.message, msg.fullsource})
+				srv.record(&OtherJoin{msg.message, msg.fullsource})
 			}
 		} else if msg.command == "PART" {
 			if msg.source == srv.serverConfig.Nick {
@@ -195,7 +199,7 @@ func (srv *IRCServer) handler() {
 			channel := srv.client.hostToChannel(srv.serverConfig.Host, name)
 			srv.client.joinChannel(channel, false)
 			srv.client.write <- ":" + msg.fullsource + " PRIVMSG " + channel + " :" + msg.message
-			srv.registrar.Add(srv.serverConfig.Name, &Message{channel, msg.message, msg.fullsource})
+			srv.record(&Message{channel, msg.message, msg.fullsource})
 		} else if msg.command == "NOTICE" {
 			srv.client.write <- msg.raw
 			if len(srv.serverConfig.Ident) > 0 && msg.source == "NickServ" && strings.HasPrefix(msg.message, "This nickname is registered and protected") {
