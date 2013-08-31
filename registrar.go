@@ -6,35 +6,38 @@ import (
 )
 
 type Registrar struct {
-	messages []Message
-	recorder chan Message
+	entries  []Entry
+	recorder chan Entry
 }
 
 type Message struct {
+	channel string
+	text    string
+	author  string
+}
+
+type Entry struct {
 	sequenceNumber int
-	channel        string
-	server         string
-	text           string
-	author         string
 	time           time.Time
+	server         string
+	message        *Message
 }
 
 func CreateRegistrar() *Registrar {
-	messages := make([]Message, 0, 100)
-	recorder := make(chan Message, 100)
-	reg := &Registrar{messages, recorder}
+	entries := make([]Entry, 0, 100)
+	recorder := make(chan Entry, 100)
+	reg := &Registrar{entries, recorder}
 	go func() {
 		for {
-			mesrec := <-reg.recorder
-			mesrec.sequenceNumber = len(reg.messages)
-			reg.messages = append(reg.messages, mesrec)
-			fmt.Printf("recorded %v\n", mesrec)
+			entry := <-reg.recorder
+			entry.sequenceNumber = len(reg.entries)
+			reg.entries = append(reg.entries, entry)
+			fmt.Printf("recorded %v\n", entry)
 		}
 	}()
 	return reg
 }
 
-func (reg *Registrar) Add(message, channel, server, author string) {
-	mesrec := Message{0, message, channel, server, author, time.Now()}
-	reg.recorder <- mesrec
+func (reg *Registrar) Add(server string, message *Message) {
+	reg.recorder <- Entry{0, time.Now(), server, message}
 }
