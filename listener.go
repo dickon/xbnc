@@ -34,10 +34,9 @@ func (cc ClientConnection) Start() {
 	cc.registrar.Subscribe(cc.regnotify)
 
 	go func() {
-
 		for {
 			entry := <-cc.regnotify
-			str := fmt.Sprintf("%d:%s\r\n", entry.sequenceNumber, entry.payload.Render())
+			str := entry.payload.Command(&entry)
 			n, err := cc.writer.WriteString(str)
 			if err != nil {
 				fmt.Printf("writestring via registrar %d error: %v\n", n, err)
@@ -47,6 +46,19 @@ func (cc ClientConnection) Start() {
 		}
 	}()
 
+	go func() {
+		for {
+			str, err := cc.reader.ReadString('\n')
+			if err != nil {
+				fmt.Printf("readc error: %v\n", err)
+				break
+			}
+
+			msg := ParseMessage(str[0 : len(str)-2])
+			fmt.Printf("got message %v\n", msg)
+		}
+
+	}()
 }
 
 func (lisn *IRCListener) Listen() error {

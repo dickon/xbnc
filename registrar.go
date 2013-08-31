@@ -15,6 +15,10 @@ func (message Message) Render() string {
 	return message.channel + ":" + message.author + ">" + message.text
 }
 
+func (message Message) Command(entry *Entry) string {
+	return fmt.Sprintf(":%s_%s PRIVMSG %s_%s :%s(%d)", message.author, entry.server, message.channel+"_"+entry.server, message.text, entry.sequenceNumber)
+}
+
 type OtherJoin struct {
 	channel string
 	author  string
@@ -24,12 +28,19 @@ func (join OtherJoin) Render() string {
 	return join.channel + " joined by " + join.author
 }
 
+func (join OtherJoin) Command(entry *Entry) string {
+	return ""
+}
+
 type MyJoin struct {
 	channel string
 }
 
 func (join MyJoin) Render() string {
 	return "joined " + join.channel
+}
+func (join MyJoin) Command(entry *Entry) string {
+	return ""
 }
 
 type TopicSet struct {
@@ -42,8 +53,13 @@ func (topic TopicSet) Render() string {
 	return topic.channel + " topic set to " + topic.text + " by " + topic.author
 }
 
+func (topic TopicSet) Command(entry *Entry) string {
+	return ""
+}
+
 type Inspecter interface {
 	Render() string
+	Command(entry *Entry) string
 }
 
 type Entry struct {
