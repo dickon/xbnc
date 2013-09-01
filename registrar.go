@@ -16,7 +16,7 @@ func (message Message) Render() string {
 }
 
 func (message Message) Command(entry *Entry) string {
-	return fmt.Sprintf(":%s_%s PRIVMSG %s_%s :%s(%d)", message.author, entry.server, message.channel+"_"+entry.server, message.text, entry.sequenceNumber)
+	return fmt.Sprintf(":%c%s PRIVMSG %c%s :%s(%d)", entry.server, message.author, message.channel, entry.server, message.text, entry.sequenceNumber)
 }
 
 type OtherJoin struct {
@@ -65,7 +65,7 @@ type Inspecter interface {
 type Entry struct {
 	sequenceNumber int
 	time           time.Time
-	server         string
+	server         rune
 	payload        Inspecter
 }
 
@@ -94,7 +94,7 @@ func CreateRegistrar() *Registrar {
 	return reg
 }
 
-func (reg *Registrar) Add(server string, payload Inspecter) {
+func (reg *Registrar) Add(server rune, payload Inspecter) {
 	reg.recorder <- Entry{0, time.Now(), server, payload}
 }
 

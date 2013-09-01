@@ -25,6 +25,7 @@ type IRCServer struct {
 	channels map[string]*IRCChannel
 
 	serverConfig ServerConfig
+	serverId     rune
 }
 
 type IRCChannel struct {
@@ -43,7 +44,8 @@ func CreateServer(registrar *Registrar, client *IRCClient, sc ServerConfig) (*IR
 	if err != nil {
 		return nil, err
 	}
-	return &IRCServer{registrar, client, false, nil, read, write, addr, channels, sc}, nil
+	serverId := ([]rune(sc.Name))[0]
+	return &IRCServer{registrar, client, false, nil, read, write, addr, channels, sc, serverId}, nil
 }
 
 func (srv *IRCServer) Connect() error {
@@ -131,7 +133,7 @@ func (srv *IRCServer) Connect() error {
 }
 
 func (srv *IRCServer) record(payload Inspecter) {
-	srv.registrar.Add(srv.serverConfig.Name, payload)
+	srv.registrar.Add(srv.serverId, payload)
 }
 
 func (srv *IRCServer) handler() {
