@@ -12,7 +12,7 @@ type Message struct {
 }
 
 func (message Message) Render() string {
-	return message.channel + ":" + message.author + ">" + message.text
+	return fmt.Sprintf("%s on %s said '%s'", message.author, message.channel, message.text)
 }
 
 func (message Message) Command(entry *Entry) string {
