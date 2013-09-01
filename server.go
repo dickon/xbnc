@@ -264,8 +264,10 @@ func (srv *IRCServer) handleReplyCode(msg *IRCMessage) {
 		srv.client.write <- ":" + conf.Hostname + " " + replycode + " " + msg.param[0] + " " + srv.client.hostToChannel(srv.serverConfig.Host, msg.param[1]) + " " + msg.param[2] + " " + msg.param[3]
 	} else if msg.replycode == 353 { // Channel members
 		srv.client.write <- ":" + conf.Hostname + " " + replycode + " " + msg.param[0] + " " + msg.param[1] + " " + srv.client.hostToChannel(srv.serverConfig.Host, msg.param[2]) + " :" + msg.message
+		srv.record(&OtherJoin{msg.param[0], msg.param[1]})
 	} else if msg.replycode == 366 || msg.replycode == 315 { // Channel members/who end
 		srv.client.write <- ":" + conf.Hostname + " " + replycode + " " + msg.param[0] + " " + srv.client.hostToChannel(srv.serverConfig.Host, msg.param[1]) + " :" + msg.message
+		srv.record(&OtherJoin{msg.param[0], msg.param[1]})
 	} else if msg.replycode == 324 || msg.replycode == 329 { // Channel mode
 		srv.client.write <- ":" + conf.Hostname + " " + replycode + " " + msg.param[0] + " " + srv.client.hostToChannel(srv.serverConfig.Host, msg.param[1]) + " " + msg.param[2]
 	} else if msg.replycode == 352 { // Channel who reply
