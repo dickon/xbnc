@@ -16,7 +16,7 @@ func (message Message) Render() string {
 }
 
 func (message Message) Command(entry *Entry) string {
-	return fmt.Sprintf(":%c%s PRIVMSG %c%s :%s(%d)", entry.server, message.author, message.channel, entry.server, message.text, entry.sequenceNumber)
+	return fmt.Sprintf(":%c%s PRIVMSG %c%s :%s(%d)", entry.server, message.author, entry.server, message.channel, message.text, entry.sequenceNumber)
 }
 
 type OtherJoin struct {
