@@ -77,7 +77,8 @@ func (lisn *IRCListener) Listen() error {
 				fmt.Printf("Listen error: %v\n", err)
 				continue
 			}
-
+			remaddr := conn.RemoteAddr()
+			fmt.Printf("Accepted incoming connection on %s:%s\n", remaddr.Network(), remaddr.String())
 			(ClientConnection{conn, bufio.NewReader(conn), bufio.NewWriter(conn), make(chan Entry, 100), lisn.registrar}).Start()
 		}
 	}()
