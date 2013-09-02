@@ -29,7 +29,7 @@ func (join OtherJoin) Render() string {
 }
 
 func (join OtherJoin) Command(entry *Entry) string {
-	return ""
+	return fmt.Sprintf(":%s 353 %c%s %s", conf.Hostname, entry.server, join.channel, join.author)
 }
 
 type MyJoin struct {
