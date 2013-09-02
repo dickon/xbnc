@@ -53,9 +53,9 @@ func (cc ClientConnection) Start() {
 				fmt.Printf("readc error: %v\n", err)
 				break
 			}
+			fmt.Printf("readc [%s]\n", str)
 
-			msg := ParseMessage(str[0 : len(str)-2])
-			fmt.Printf("got message %v\n", msg)
+			//msg := ParseMessage(str[0 : len(str)-2])
 		}
 
 	}()

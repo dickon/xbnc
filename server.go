@@ -82,7 +82,7 @@ func (srv *IRCServer) Connect() error {
 			}
 
 			msg := ParseMessage(str[0 : len(str)-2]) // Cut off the \r\n and parse
-			fmt.Printf("reads: %s\n", msg.raw)
+			fmt.Printf("reads(%s): %s\n", srv.serverConfig.Name, msg.raw)
 			srv.read <- msg
 		}
 	}()
@@ -91,7 +91,7 @@ func (srv *IRCServer) Connect() error {
 			str := <-srv.write
 
 			_, err := writer.WriteString(str + "\r\n")
-			fmt.Printf("writes: %s\n", str)
+			fmt.Printf("writes(%s): %s\n", srv.serverConfig.Name, str)
 			if err != nil {
 				fmt.Printf("server write error %v\n", err)
 				continue
