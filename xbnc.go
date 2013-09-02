@@ -10,17 +10,17 @@ func main() {
 	readConfig()
 	client := CreateClient(reg, conf.Nick, conf.Login, conf.Ident)
 	for _, serverConf := range conf.Servers {
-		go func() {
-			server := client.addServer(*serverConf)
+		go func(sc *ServerConfig) {
+			server := client.addServer(*sc)
 			if server == nil {
-				fmt.Printf("failed to connect to %v", serverConf)
+				fmt.Printf("failed to connect to %v", sc)
 				os.Exit(5)
 			}
-			for _, channel := range serverConf.Channels {
-				fmt.Printf("Joining channel %s of %s\n", channel, server.serverConfig.Name)
+			for _, channel := range sc.Channels {
+				fmt.Printf("Joining channel %s of %s\n", channel, sc.Name)
 				server.write <- "JOIN " + channel
 			}
-		}()
+		}(serverConf)
 	}
 	lisn, err := CreateListener(reg, client, conf.Port)
 	if err != nil {
