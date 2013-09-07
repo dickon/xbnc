@@ -91,7 +91,7 @@ func CreateRegistrar() *Registrar {
 		for {
 			entry := <-reg.recorder
 			entry.sequenceNumber = len(reg.entries)
-			fmt.Printf("recorded %s", entry.Render())
+			fmt.Printf("recorded %s\n", entry.Render())
 			reg.entries = append(reg.entries, entry)
 			for _, notifier := range reg.notifiers {
 				notifier <- entry
