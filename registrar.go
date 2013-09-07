@@ -30,7 +30,8 @@ func (join OtherJoin) Render() string {
 }
 
 func (join OtherJoin) Command(entry *Entry, cc *ClientConnection) string {
-	return fmt.Sprintf(":%s 353 %c%s %s", conf.Hostname, entry.server, join.channel, join.author)
+	channel := []rune(join.channel)
+	return fmt.Sprintf(":%s %03d %c%c%s %s", conf.Hostname, RPL_NAMREPLY, channel[0], entry.server, string(join.channel[1:]), join.author)
 }
 
 type MyJoin struct {
