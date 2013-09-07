@@ -35,12 +35,12 @@ func CreateClient(registrar *Registrar, nick, login, ident string) *IRCClient {
 		nextId <- i
 	}
 	client := &IRCClient{registrar, false, nil, read, write, channels, nick, login, ident, servers, serverIds, nextId}
-	go func() {
-		for {
-			msg := <-client.write
-			fmt.Printf("writec %s\n", msg)
-		}
-	}()
+	// go func() {
+	// 	for {
+	// 		msg := <-client.write
+	// 		fmt.Printf("writec %s\n", msg)
+	// 	}
+	// }()
 	return client
 }
 
