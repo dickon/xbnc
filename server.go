@@ -115,8 +115,11 @@ func (srv *IRCServer) Connect() error {
 		if msg.command == "PING" {
 			srv.write <- "PONG :" + msg.message
 		} else if msg.replycode >= 1 && msg.replycode <= 5 {
+			if msg.replycode == 1 {
+				srv.record(&MyJoin{"#hello"})
+			}
 			srv.client.write <- ":-!xbnc@xbnc PRIVMSG " + srv.client.hostToChannel(srv.serverConfig.Host, "") + " :" + msg.message
-			srv.record(&Message{"hello", msg.message, "server"})
+			srv.record(&Message{"#hello", msg.message, "server"})
 			// Successful connect
 			break
 		} else if msg.replycode == 433 {
@@ -241,7 +244,7 @@ func (srv *IRCServer) handleReplyCode(msg *IRCMessage) {
 	replycode := fmt.Sprintf("%03d", msg.replycode)
 	if msg.replycode >= 1 && msg.replycode <= 3 {
 		srv.client.write <- ":-!xbnc@xbnc PRIVMSG " + srv.client.hostToChannel(srv.serverConfig.Host, "") + " :" + msg.message
-		srv.record(&Message{"hello", msg.message, srv.serverConfig.Name})
+		srv.record(&Message{"#hello", msg.message, srv.serverConfig.Name})
 	} else if (msg.replycode >= 4 && msg.replycode <= 5) || (msg.replycode >= 251 && msg.replycode <= 255) { // Server info
 		tmpi := strings.Index(msg.raw, msg.param[0])
 		if tmpi >= 0 && len(msg.param[0]) > 0 {
@@ -250,13 +253,13 @@ func (srv *IRCServer) handleReplyCode(msg *IRCMessage) {
 				tmpmsg = tmpmsg[1:]
 			}
 			srv.client.write <- ":-!xbnc@xbnc PRIVMSG " + srv.client.hostToChannel(srv.serverConfig.Host, "") + " :" + tmpmsg
-			srv.record(&Message{"hello", tmpmsg, srv.serverConfig.Name})
+			srv.record(&Message{"#hello", tmpmsg, srv.serverConfig.Name})
 		} else {
 			srv.client.write <- ":-!xbnc@xbnc PRIVMSG " + srv.client.hostToChannel(srv.serverConfig.Host, "") + " :" + msg.raw
 		}
 	} else if (msg.replycode >= 265 && msg.replycode <= 266) || msg.replycode == 375 || msg.replycode == 372 || msg.replycode == 376 { // Server info and MOTD
 		srv.client.write <- ":-!xbnc@xbnc PRIVMSG " + srv.client.hostToChannel(srv.serverConfig.Host, "") + " :" + msg.message
-		srv.record(&Message{"hello", msg.message, srv.serverConfig.Name})
+		srv.record(&Message{"#hello", msg.message, srv.serverConfig.Name})
 	} else if msg.replycode == 332 { // Channel topic
 		srv.client.write <- ":" + conf.Hostname + " " + replycode + " " + msg.param[0] + " " + srv.client.hostToChannel(srv.serverConfig.Host, msg.param[1]) + " :" + msg.message
 		srv.record(&TopicSet{msg.param[1], msg.message, msg.param[0]})
