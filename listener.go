@@ -104,19 +104,27 @@ func (cc ClientConnection) Start() {
 					channel, cexists := si.channels[sname]
 					fmt.Printf("server %s channel %s exists %v\n", name[1], sname, cexists)
 					if cexists {
+						members := make([]string, len(channel.members))
+						i := 0
 						for k, _ := range channel.members {
-							fmt.Printf("channel %s member %s\n", msg.param[0], k)
+							members[i] = k
+							i++
 						}
+						// TODO replace = with correct char, depending on join mode
+						cc.Send(RPL_NAMREPLY, " = "+msg.param[0]+" :"+strings.Join(members, " "), "MODE response")
+						cc.Send(RPL_ENDOFNAMES, msg.param[0]+" :End of /NAMES list.", "MODE response")
+						cc.Send(RPL_CHANNELMODEIS, msg.param[0]+" "+channel.mode, "MODE response")
+						cc.Send(RPL_CREATIONTIME, fmt.Sprintf("%s %d", msg.param[0], channel.creationTime), "MODE response")
 					}
 				}
 
 			}
 			if !cc.registered && cc.nick != "" && cc.login != "" {
-				cc.Send(RPL_WELCOME, "Welcome to XBNC "+cc.nick+"!"+cc.login+"@"+cc.address, "logged in")
-				cc.Send(RPL_YOURHOST, "Your host is "+conf.Hostname, "logged in")
-				cc.Send(RPL_CREATED, "This server was created today", "logged in") // TODO correct date
-				cc.Send(RPL_MYINFO, conf.Hostname+" XBNC2.0 iowghraAsORTVSxNCWqBzvdHtGpI lvhopsmntikrRcaqOALQbSeIKVfMCuzNTGjZ", "logged in")
-				cc.Send(RPL_BOUNCE, "CHANTYPES=# NETWORK=XBNC PREFIX=(qaohv)~&@%+ CASEMAPPING=ascii :are supported by this serVer", "logged in")
+				cc.Send(RPL_WELCOME, ":Welcome to XBNC "+cc.nick+"!"+cc.login+"@"+cc.address, "logged in")
+				cc.Send(RPL_YOURHOST, ":Your host is "+conf.Hostname, "logged in")
+				cc.Send(RPL_CREATED, ":This server was created today", "logged in") // TODO correct date
+				cc.Send(RPL_MYINFO, ":"+conf.Hostname+" XBNC2.0 iowghraAsORTVSxNCWqBzvdHtGpI lvhopsmntikrRcaqOALQbSeIKVfMCuzNTGjZ", "logged in")
+				cc.Send(RPL_BOUNCE, ":CHANTYPES=# NETWORK=XBNC PREFIX=(qaohv)~&@%+ CASEMAPPING=ascii :are supported by this serVer", "logged in")
 				cc.registered = true
 				cc.registrar.Subscribe(cc.regnotify)
 			}
@@ -126,7 +134,7 @@ func (cc ClientConnection) Start() {
 }
 
 func (cc *ClientConnection) Send(code int, payload string, why string) {
-	cc.output <- ClientOut{fmt.Sprintf("%03d %s :%s", code, cc.nick, payload), "logged in"}
+	cc.output <- ClientOut{fmt.Sprintf("%03d %s %s", code, cc.nick, payload), "logged in"}
 }
 
 func (lisn *IRCListener) Listen() error {
