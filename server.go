@@ -163,6 +163,7 @@ func (srv *IRCServer) handler() {
 				srv.record(&MyJoin{msg.message})
 			} else {
 				// another user joined a channel
+				fmt.Printf("message source [%s] != server nick [%s]\n", msg.source, srv.serverConfig.Nick)
 				srv.client.write <- ":" + msg.fullsource + " JOIN :" + srv.client.hostToChannel(srv.serverConfig.Host, msg.message)
 				srv.record(&OtherJoin{msg.message, msg.fullsource})
 			}
