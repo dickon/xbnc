@@ -265,17 +265,17 @@ func (srv *IRCServer) handleReplyCode(msg *IRCMessage) {
 	} else if (msg.replycode >= 265 && msg.replycode <= 266) || msg.replycode == 375 || msg.replycode == 372 || msg.replycode == 376 { // Server info and MOTD
 		srv.client.write <- ":-!xbnc@xbnc PRIVMSG " + srv.client.hostToChannel(srv.serverConfig.Host, "") + " :" + msg.message
 		srv.record(&Message{"#hello", msg.message, srv.serverConfig.Name})
-	} else if msg.replycode == 332 { // Channel topic
+	} else if msg.replycode == RPL_TOPIC { // Channel topic
 		srv.client.write <- ":" + conf.Hostname + " " + replycode + " " + msg.param[0] + " " + srv.client.hostToChannel(srv.serverConfig.Host, msg.param[1]) + " :" + msg.message
 		srv.record(&TopicSet{msg.param[1], msg.message, msg.param[0]})
 	} else if msg.replycode == 333 { // Channel topic setter
 		srv.client.write <- ":" + conf.Hostname + " " + replycode + " " + msg.param[0] + " " + srv.client.hostToChannel(srv.serverConfig.Host, msg.param[1]) + " " + msg.param[2] + " " + msg.param[3]
-	} else if msg.replycode == 353 { // Channel members
+	} else if msg.replycode == RPL_NAMREPLY { // Channel members
 		srv.client.write <- ":" + conf.Hostname + " " + replycode + " " + msg.param[0] + " " + msg.param[1] + " " + srv.client.hostToChannel(srv.serverConfig.Host, msg.param[2]) + " :" + msg.message
 		for _, name := range strings.Fields(msg.message) {
 			srv.record(&OtherJoin{msg.param[2], name})
 		}
-	} else if msg.replycode == 366 || msg.replycode == 315 { // Channel members/who end
+	} else if msg.replycode == RPL_ENDOFNAMES || msg.replycode == RPL_ENDOFWHO { // Channel members/who end
 		srv.client.write <- ":" + conf.Hostname + " " + replycode + " " + msg.param[0] + " " + srv.client.hostToChannel(srv.serverConfig.Host, msg.param[1]) + " :" + msg.message
 	} else if msg.replycode == 324 || msg.replycode == 329 { // Channel mode
 		srv.client.write <- ":" + conf.Hostname + " " + replycode + " " + msg.param[0] + " " + srv.client.hostToChannel(srv.serverConfig.Host, msg.param[1]) + " " + msg.param[2]
