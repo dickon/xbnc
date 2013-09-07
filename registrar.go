@@ -70,6 +70,10 @@ type Entry struct {
 	payload        Inspecter
 }
 
+func (entry *Entry) Render() string {
+	return fmt.Sprintf("entry %05d server %c: %s", entry.sequenceNumber, entry.server, entry.payload.Render())
+}
+
 type Registrar struct {
 	entries   []Entry
 	notifiers []chan Entry
@@ -85,6 +89,7 @@ func CreateRegistrar() *Registrar {
 		for {
 			entry := <-reg.recorder
 			entry.sequenceNumber = len(reg.entries)
+			fmt.Printf("recorded %s", entry.Render())
 			reg.entries = append(reg.entries, entry)
 			for _, notifier := range reg.notifiers {
 				notifier <- entry

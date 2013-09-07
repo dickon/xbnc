@@ -52,6 +52,7 @@ func (cc ClientConnection) Start() {
 	go func() {
 		for {
 			entry := <-cc.regnotify
+			fmt.Printf("handling %s\n", entry.Render())
 			str := entry.payload.Command(&entry)
 			cc.output <- ClientOut{str, "via registrar"}
 		}
