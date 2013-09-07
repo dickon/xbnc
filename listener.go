@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"strconv"
+	"strings"
 )
 
 const (
@@ -53,7 +54,7 @@ func (cc ClientConnection) Start() {
 		for {
 			entry := <-cc.regnotify
 			fmt.Printf("handling %s\n", entry.Render())
-			str := entry.payload.Command(&entry)
+			str := entry.payload.Command(&entry, &cc)
 			cc.output <- ClientOut{str, "via registrar"}
 		}
 	}()
@@ -94,6 +95,7 @@ func (cc ClientConnection) Start() {
 				cc.Send(RPL_CREATED, "This server was created today", "logged in") // TODO correct date
 				cc.Send(RPL_MYINFO, conf.Hostname+" XBNC2.0 iowghraAsORTVSxNCWqBzvdHtGpI lvhopsmntikrRcaqOALQbSeIKVfMCuzNTGjZ", "logged in")
 				cc.Send(RPL_BOUNCE, "CHANTYPES=# NETWORK=XBNC PREFIX=(qaohv)~&@%+ CASEMAPPING=ascii :are supported by this serVer", "logged in")
+				cc.registered = true
 				cc.registrar.Subscribe(cc.regnotify)
 			}
 		}
@@ -122,8 +124,9 @@ func (lisn *IRCListener) Listen() error {
 				continue
 			}
 			remaddr := conn.RemoteAddr()
-			fmt.Printf("Accepted incoming connection on %s:%s\n", remaddr.Network(), remaddr.String())
-			(ClientConnection{conn, bufio.NewReader(conn), bufio.NewWriter(conn), make(chan Entry, 100), lisn.registrar, "", "", remaddr.String(), make(chan ClientOut, 100), false}).Start()
+			segments := strings.Split(remaddr.String(), ":")
+			fmt.Printf("Accepted incoming connection on %s\n", segments[0])
+			(ClientConnection{conn, bufio.NewReader(conn), bufio.NewWriter(conn), make(chan Entry, 100), lisn.registrar, "", "", segments[0], make(chan ClientOut, 100), false}).Start()
 		}
 	}()
 	return nil
