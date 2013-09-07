@@ -16,7 +16,7 @@ func (message Message) Render() string {
 }
 
 func (message Message) Command(entry *Entry) string {
-	return fmt.Sprintf(":%c%s PRIVMSG %c%s :%s(%d)", entry.server, message.author, entry.server, message.channel, message.text, entry.sequenceNumber)
+	return fmt.Sprintf("PRIVMSG #%c%s :%s(%d)", entry.server, message.channel, message.text, entry.sequenceNumber)
 }
 
 type OtherJoin struct {
@@ -39,8 +39,9 @@ type MyJoin struct {
 func (join MyJoin) Render() string {
 	return "joined " + join.channel
 }
+
 func (join MyJoin) Command(entry *Entry) string {
-	return ""
+	return "JOIN :" + join.channel
 }
 
 type TopicSet struct {

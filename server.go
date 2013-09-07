@@ -116,7 +116,7 @@ func (srv *IRCServer) Connect() error {
 			srv.write <- "PONG :" + msg.message
 		} else if msg.replycode >= 1 && msg.replycode <= 5 {
 			srv.client.write <- ":-!xbnc@xbnc PRIVMSG " + srv.client.hostToChannel(srv.serverConfig.Host, "") + " :" + msg.message
-			srv.record(&Message{srv.serverConfig.Host, msg.message, "hello"})
+			srv.record(&Message{"hello", msg.message, "server"})
 			// Successful connect
 			break
 		} else if msg.replycode == 433 {
