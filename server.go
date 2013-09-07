@@ -164,6 +164,7 @@ func (srv *IRCServer) handler() {
 				}
 				srv.client.joinChannel(srv.client.hostToChannel(srv.serverConfig.Host, msg.message), true)
 				srv.record(&MyJoin{msg.message})
+				srv.write <- "MODE " + msg.message
 			} else {
 				// another user joined a channel
 				fmt.Printf("message source [%s] != server nick [%s]\n", msg.source, srv.givenNick)
