@@ -7,6 +7,14 @@ import (
 	"strconv"
 )
 
+const (
+	RPL_WELCOME  = 1
+	RPL_YOURHOST = 2
+	RPL_CREATED  = 3
+	RPL_MYINFO   = 4
+	RPL_BOUNCE   = 5
+)
+
 type IRCListener struct {
 	addr *net.TCPAddr
 
@@ -22,26 +30,41 @@ func CreateListener(registrar *Registrar, client *IRCClient, port int) (*IRCList
 	return &IRCListener{addr, client, registrar}, nil
 }
 
+type ClientOut struct {
+	message, why string
+}
+
 type ClientConnection struct {
-	conn      *net.TCPConn
-	reader    *bufio.Reader
-	writer    *bufio.Writer
-	regnotify chan Entry
-	registrar *Registrar
+	conn       *net.TCPConn
+	reader     *bufio.Reader
+	writer     *bufio.Writer
+	regnotify  chan Entry
+	registrar  *Registrar
+	login      string
+	nick       string
+	address    string
+	output     chan ClientOut
+	registered bool // set to true when registration is complete
 }
 
 func (cc ClientConnection) Start() {
-	cc.registrar.Subscribe(cc.regnotify)
 
 	go func() {
 		for {
 			entry := <-cc.regnotify
 			str := entry.payload.Command(&entry)
-			n, err := cc.writer.WriteString(str)
+			cc.output <- ClientOut{str, "via registrar"}
+		}
+	}()
+
+	go func() {
+		for {
+			cmesg := <-cc.output
+			n, err := cc.writer.WriteString(cmesg.message)
 			if err != nil {
-				fmt.Printf("writestring via registrar %d error: %v\n", n, err)
+				fmt.Printf("writestring %s %d error: %v\n", cmesg.why, n, err)
 			}
-			fmt.Printf("writec via registrar: %s\n", str)
+			fmt.Printf("writec %s: %s\n", cmesg.why, cmesg.message)
 			cc.writer.Flush()
 		}
 	}()
@@ -55,7 +78,23 @@ func (cc ClientConnection) Start() {
 			}
 			fmt.Printf("readc [%s]\n", str)
 
-			//msg := ParseMessage(str[0 : len(str)-2])
+			msg := ParseMessage(str[0 : len(str)-2])
+			fmt.Printf("got client command %s\n", msg.command)
+
+			switch msg.command {
+			case "NICK":
+				cc.nick = msg.param[0]
+			case "USER":
+				cc.login = msg.param[0]
+			}
+			if !cc.registered && cc.nick != "" && cc.login != "" {
+				cc.output <- ClientOut{fmt.Sprintf("%03d %s :Welcome to XBNC %s!%s@%s", RPL_WELCOME, cc.nick, cc.nick, cc.login, cc.address), "logged in"}
+				cc.output <- ClientOut{fmt.Sprintf("%03d %s :Your host is %s", RPL_YOURHOST, cc.nick, conf.Hostname), "logged in"}
+				cc.output <- ClientOut{fmt.Sprintf("%03d %s :This server was created today", RPL_CREATED, cc.nick), "logged in"} // TODO: give proper date
+				cc.output <- ClientOut{fmt.Sprintf("%03d %s :%s XBNC2.0 iowghraAsORTVSxNCWqBzvdHtGpI lvhopsmntikrRcaqOALQbSeIKVfMCuzNTGjZ", RPL_MYINFO, cc.nick, conf.Hostname), "logged in"}
+				cc.output <- ClientOut{fmt.Sprintf("%03d %s ::CHANTYPES=# NETWORK=XBNC PREFIX=(qaohv)~&@%+ CASEMAPPING=ascii :are supported by this serVer", RPL_BOUNCE, cc.nick), "logged in"}
+				cc.registrar.Subscribe(cc.regnotify)
+			}
 		}
 
 	}()
@@ -79,7 +118,7 @@ func (lisn *IRCListener) Listen() error {
 			}
 			remaddr := conn.RemoteAddr()
 			fmt.Printf("Accepted incoming connection on %s:%s\n", remaddr.Network(), remaddr.String())
-			(ClientConnection{conn, bufio.NewReader(conn), bufio.NewWriter(conn), make(chan Entry, 100), lisn.registrar}).Start()
+			(ClientConnection{conn, bufio.NewReader(conn), bufio.NewWriter(conn), make(chan Entry, 100), lisn.registrar, "", "", remaddr.String(), make(chan ClientOut, 100), false}).Start()
 		}
 	}()
 	return nil
