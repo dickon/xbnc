@@ -164,7 +164,7 @@ func (client *IRCClient) joinChannel(name string, server bool) {
 			channel.active = true
 		}
 	}
-	client.channels[name] = &IRCChannel{name, server}
+	client.channels[name] = &IRCChannel{name, server, 0, "", make(map[string]string)}
 	client.write <- ":" + client.nick + "!" + client.login + "@xbnc JOIN :" + name
 }
 

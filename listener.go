@@ -27,6 +27,10 @@ type ClientOut struct {
 	message, why string
 }
 
+type ServerInfo struct {
+	channels map[string]IRCChannel
+}
+
 type ClientConnection struct {
 	conn       *net.TCPConn
 	reader     *bufio.Reader
@@ -38,6 +42,7 @@ type ClientConnection struct {
 	address    string
 	output     chan ClientOut
 	registered bool // set to true when registration is complete
+	servers    map[rune]ServerInfo
 }
 
 func (cc ClientConnection) Start() {
@@ -45,8 +50,17 @@ func (cc ClientConnection) Start() {
 	go func() {
 		for {
 			entry := <-cc.regnotify
+			_, exists := cc.servers[entry.server]
+			if !exists {
+				cc.servers[entry.server] = ServerInfo{make(map[string]IRCChannel)}
+			}
+			si, _ := cc.servers[entry.server]
 			fmt.Printf("handling %s\n", entry.Render())
 			str := entry.payload.Command(&entry, &cc)
+			switch t := entry.payload.(type) {
+			case IRCChannel:
+				si.channels[t.name] = t
+			}
 			cc.output <- ClientOut{str, "via registrar"}
 		}
 	}()
@@ -80,6 +94,22 @@ func (cc ClientConnection) Start() {
 				cc.nick = msg.param[0]
 			case "USER":
 				cc.login = msg.param[0]
+			case "MODE":
+				name := []rune(msg.param[0])
+				si, exists := cc.servers[name[1]]
+				if !exists {
+					fmt.Printf("unknown server %s\n", name[1])
+				} else {
+					sname := string(name[0]) + string(name[2:])
+					channel, cexists := si.channels[sname]
+					fmt.Printf("server %s channel %s exists %v\n", name[1], sname, cexists)
+					if cexists {
+						for k, _ := range channel.members {
+							fmt.Printf("channel %s member %s\n", msg.param[0], k)
+						}
+					}
+				}
+
 			}
 			if !cc.registered && cc.nick != "" && cc.login != "" {
 				cc.Send(RPL_WELCOME, "Welcome to XBNC "+cc.nick+"!"+cc.login+"@"+cc.address, "logged in")
@@ -118,7 +148,7 @@ func (lisn *IRCListener) Listen() error {
 			remaddr := conn.RemoteAddr()
 			segments := strings.Split(remaddr.String(), ":")
 			fmt.Printf("Accepted incoming connection on %s\n", segments[0])
-			(ClientConnection{conn, bufio.NewReader(conn), bufio.NewWriter(conn), make(chan Entry, 100), lisn.registrar, "", "", segments[0], make(chan ClientOut, 100), false}).Start()
+			(ClientConnection{conn, bufio.NewReader(conn), bufio.NewWriter(conn), make(chan Entry, 100), lisn.registrar, "", "", segments[0], make(chan ClientOut, 100), false, make(map[rune]ServerInfo)}).Start()
 		}
 	}()
 	return nil

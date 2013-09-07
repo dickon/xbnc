@@ -30,8 +30,19 @@ type IRCServer struct {
 }
 
 type IRCChannel struct {
-	name   string
-	active bool
+	name         string
+	active       bool
+	creationTime uint64
+	mode         string
+	members      map[string]string // nick to full name
+}
+
+func (channel *IRCChannel) Copy() IRCChannel {
+	outmembers := make(map[string]string)
+	for k, v := range channel.members {
+		outmembers[k] = v
+	}
+	return IRCChannel{channel.name, channel.active, channel.creationTime, channel.mode, outmembers}
 }
 
 func CreateServer(registrar *Registrar, client *IRCClient, sc ServerConfig) (*IRCServer, error) {
@@ -119,7 +130,7 @@ func (srv *IRCServer) Connect() error {
 			if msg.replycode == 1 {
 				srv.givenNick = msg.param[0]
 				fmt.Printf("set givenNick to %s\n", srv.givenNick)
-				srv.record(&MyJoin{"#hello"})
+				srv.record(srv.GetChannel("#hello").Copy())
 			}
 			srv.client.write <- ":-!xbnc@xbnc PRIVMSG " + srv.client.hostToChannel(srv.serverConfig.Host, "") + " :" + msg.message
 			srv.record(&Message{"#hello", msg.message, "server"})
@@ -143,6 +154,33 @@ func (srv *IRCServer) record(payload Inspecter) {
 	srv.registrar.Add(srv.serverId, payload)
 }
 
+func (srv *IRCServer) GetChannel(channel string) *IRCChannel {
+	tmp, exists := srv.channels[channel]
+	if exists {
+		tmp.active = true
+	} else {
+		tmp = &IRCChannel{channel, true, 0, "", make(map[string]string)}
+		srv.channels[channel] = tmp
+	}
+	return tmp
+}
+
+func (channel *IRCChannel) Update(srv *IRCServer) {
+	if channel.name == "" {
+		fmt.Printf("Channel missing name; not recording\n")
+		return
+	}
+	if channel.creationTime == 0 {
+		fmt.Printf("Channel %s creation time unknown; not recording\n", channel.name)
+		return
+	}
+	if channel.mode == "" {
+		fmt.Printf("Channel %s mode unknown; not recording\n", channel.name)
+		return
+	}
+	srv.record(channel.Copy())
+}
+
 func (srv *IRCServer) handler() {
 	for srv.connected {
 		msg := <-srv.read
@@ -155,21 +193,15 @@ func (srv *IRCServer) handler() {
 		} else if msg.command == "REPLY" {
 			srv.handleReplyCode(msg)
 		} else if msg.command == "JOIN" {
+			channel := srv.GetChannel(msg.param[0])
 			if msg.source == srv.givenNick {
-				tmp, exists := srv.channels[msg.param[0]]
-				if exists {
-					tmp.active = true
-				} else {
-					srv.channels[msg.message] = &IRCChannel{msg.message, true}
-				}
 				srv.client.joinChannel(srv.client.hostToChannel(srv.serverConfig.Host, msg.message), true)
-				srv.record(&MyJoin{msg.message})
 				srv.write <- "MODE " + msg.message
 			} else {
 				// another user joined a channel
 				fmt.Printf("message source [%s] != server nick [%s]\n", msg.source, srv.givenNick)
 				srv.client.write <- ":" + msg.fullsource + " JOIN :" + srv.client.hostToChannel(srv.serverConfig.Host, msg.message)
-				srv.record(&OtherJoin{msg.message, msg.fullsource})
+				channel.members[msg.message] = msg.fullsource
 			}
 		} else if msg.command == "PART" {
 			if msg.source == srv.serverConfig.Nick {
@@ -272,13 +304,30 @@ func (srv *IRCServer) handleReplyCode(msg *IRCMessage) {
 		srv.client.write <- ":" + conf.Hostname + " " + replycode + " " + msg.param[0] + " " + srv.client.hostToChannel(srv.serverConfig.Host, msg.param[1]) + " " + msg.param[2] + " " + msg.param[3]
 	} else if msg.replycode == RPL_NAMREPLY { // Channel members
 		srv.client.write <- ":" + conf.Hostname + " " + replycode + " " + msg.param[0] + " " + msg.param[1] + " " + srv.client.hostToChannel(srv.serverConfig.Host, msg.param[2]) + " :" + msg.message
+		channel := srv.GetChannel(msg.param[2])
 		for _, name := range strings.Fields(msg.message) {
-			srv.record(&OtherJoin{msg.param[2], name})
+			channel.members[name] = ""
 		}
-	} else if msg.replycode == RPL_ENDOFNAMES || msg.replycode == RPL_ENDOFWHO { // Channel members/who end
+	} else if msg.replycode == RPL_ENDOFNAMES {
 		srv.client.write <- ":" + conf.Hostname + " " + replycode + " " + msg.param[0] + " " + srv.client.hostToChannel(srv.serverConfig.Host, msg.param[1]) + " :" + msg.message
-	} else if msg.replycode == 324 || msg.replycode == 329 { // Channel mode
+		srv.GetChannel(msg.param[1]).Update(srv)
+	} else if msg.replycode == RPL_ENDOFWHO {
+		srv.client.write <- ":" + conf.Hostname + " " + replycode + " " + msg.param[0] + " " + srv.client.hostToChannel(srv.serverConfig.Host, msg.param[1]) + " :" + msg.message
+	} else if msg.replycode == RPL_CHANNELMODEIS { // Channel mode
 		srv.client.write <- ":" + conf.Hostname + " " + replycode + " " + msg.param[0] + " " + srv.client.hostToChannel(srv.serverConfig.Host, msg.param[1]) + " " + msg.param[2]
+		channel := srv.GetChannel(msg.param[1])
+		channel.mode = msg.param[2]
+		channel.Update(srv)
+	} else if msg.replycode == RPL_CREATIONTIME { // Channel mode
+		srv.client.write <- ":" + conf.Hostname + " " + replycode + " " + msg.param[0] + " " + srv.client.hostToChannel(srv.serverConfig.Host, msg.param[1]) + " " + msg.param[2]
+		channel := srv.GetChannel(msg.param[1])
+		ct, err := strconv.ParseUint(msg.param[2], 10, 64)
+		if err != nil {
+			fmt.Printf("unable to parse creation time [%s]: %s\n", msg, msg.param[2], ct)
+		} else {
+			channel.creationTime = ct
+		}
+		channel.Update(srv)
 	} else if msg.replycode == 352 { // Channel who reply
 		srv.client.write <- ":" + conf.Hostname + " " + replycode + " " + msg.param[0] + " " + srv.client.hostToChannel(srv.serverConfig.Host, msg.param[1]) + " " + msg.param[2] + " " + msg.param[3] + " " + conf.Hostname + " " + msg.param[5] + " " + msg.param[6] + " :" + msg.message
 	} else {

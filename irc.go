@@ -7,15 +7,17 @@ import (
 )
 
 const (
-	RPL_WELCOME    = 1
-	RPL_YOURHOST   = 2
-	RPL_CREATED    = 3
-	RPL_MYINFO     = 4
-	RPL_BOUNCE     = 5
-	RPL_ENDOFWHO   = 315
-	RPL_TOPIC      = 332
-	RPL_NAMREPLY   = 353
-	RPL_ENDOFNAMES = 366
+	RPL_WELCOME       = 1
+	RPL_YOURHOST      = 2
+	RPL_CREATED       = 3
+	RPL_MYINFO        = 4
+	RPL_BOUNCE        = 5
+	RPL_ENDOFWHO      = 315
+	RPL_CHANNELMODEIS = 324
+	RPL_CREATIONTIME  = 329
+	RPL_TOPIC         = 332
+	RPL_NAMREPLY      = 353
+	RPL_ENDOFNAMES    = 366
 )
 
 type IRCMessage struct {

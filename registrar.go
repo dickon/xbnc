@@ -20,31 +20,13 @@ func (message Message) Command(entry *Entry, cc *ClientConnection) string {
 	return fmt.Sprintf(":%s PRIVMSG %c%c%s :%s (%d)", message.author, channel[0], entry.server, string(channel[1:]), message.text, entry.sequenceNumber)
 }
 
-type OtherJoin struct {
-	channel string
-	author  string
+func (channel IRCChannel) Render() string {
+	return "joined " + channel.name
 }
 
-func (join OtherJoin) Render() string {
-	return join.channel + " joined by " + join.author
-}
-
-func (join OtherJoin) Command(entry *Entry, cc *ClientConnection) string {
-	channel := []rune(join.channel)
-	return fmt.Sprintf(":%s %03d %c%c%s %s", conf.Hostname, RPL_NAMREPLY, channel[0], entry.server, string(join.channel[1:]), join.author)
-}
-
-type MyJoin struct {
-	channel string
-}
-
-func (join MyJoin) Render() string {
-	return "joined " + join.channel
-}
-
-func (join MyJoin) Command(entry *Entry, cc *ClientConnection) string {
-	channel := []rune(join.channel)
-	return fmt.Sprintf(":%s!%s@%s JOIN :%c%c%s", cc.nick, cc.login, cc.address, channel[0], entry.server, string(channel[1:]))
+func (channel IRCChannel) Command(entry *Entry, cc *ClientConnection) string {
+	name := []rune(channel.name)
+	return fmt.Sprintf(":%s!%s@%s JOIN :%c%c%s", cc.nick, cc.login, cc.address, name[0], entry.server, string(name[1:]))
 }
 
 type TopicSet struct {
