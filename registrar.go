@@ -41,7 +41,7 @@ func (join MyJoin) Render() string {
 }
 
 func (join MyJoin) Command(entry *Entry) string {
-	return "JOIN :" + join.channel
+	return fmt.Sprintf("JOIN :#%c%s", entry.server, join.channel[1:])
 }
 
 type TopicSet struct {
