@@ -26,6 +26,7 @@ type IRCServer struct {
 
 	serverConfig ServerConfig
 	serverId     rune
+	givenNick    string
 }
 
 type IRCChannel struct {
@@ -45,7 +46,7 @@ func CreateServer(registrar *Registrar, client *IRCClient, sc ServerConfig) (*IR
 		return nil, err
 	}
 	serverId := ([]rune(sc.Name))[0]
-	return &IRCServer{registrar, client, false, nil, read, write, addr, channels, sc, serverId}, nil
+	return &IRCServer{registrar, client, false, nil, read, write, addr, channels, sc, serverId, ""}, nil
 }
 
 func (srv *IRCServer) Connect() error {
@@ -116,6 +117,8 @@ func (srv *IRCServer) Connect() error {
 			srv.write <- "PONG :" + msg.message
 		} else if msg.replycode >= 1 && msg.replycode <= 5 {
 			if msg.replycode == 1 {
+				srv.givenNick = msg.param[0]
+				fmt.Printf("set givenNick to %s\n", srv.givenNick)
 				srv.record(&MyJoin{"#hello"})
 			}
 			srv.client.write <- ":-!xbnc@xbnc PRIVMSG " + srv.client.hostToChannel(srv.serverConfig.Host, "") + " :" + msg.message
@@ -152,7 +155,7 @@ func (srv *IRCServer) handler() {
 		} else if msg.command == "REPLY" {
 			srv.handleReplyCode(msg)
 		} else if msg.command == "JOIN" {
-			if msg.source == srv.serverConfig.Nick {
+			if msg.source == srv.givenNick {
 				tmp, exists := srv.channels[msg.param[0]]
 				if exists {
 					tmp.active = true
@@ -163,7 +166,7 @@ func (srv *IRCServer) handler() {
 				srv.record(&MyJoin{msg.message})
 			} else {
 				// another user joined a channel
-				fmt.Printf("message source [%s] != server nick [%s]\n", msg.source, srv.serverConfig.Nick)
+				fmt.Printf("message source [%s] != server nick [%s]\n", msg.source, srv.givenNick)
 				srv.client.write <- ":" + msg.fullsource + " JOIN :" + srv.client.hostToChannel(srv.serverConfig.Host, msg.message)
 				srv.record(&OtherJoin{msg.message, msg.fullsource})
 			}
@@ -200,13 +203,13 @@ func (srv *IRCServer) handler() {
 			srv.client.write <- ":" + msg.fullsource + " QUIT :" + msg.message
 		} else if msg.command == "PRIVMSG" {
 			name := msg.param[0]
-			if name == srv.serverConfig.Nick {
+			if name == srv.givenNick {
 				name = msg.source
 			}
 			channel := srv.client.hostToChannel(srv.serverConfig.Host, name)
 			srv.client.joinChannel(channel, false)
 			srv.client.write <- ":" + msg.fullsource + " PRIVMSG " + channel + " :" + msg.message
-			srv.record(&Message{channel, msg.message, msg.fullsource})
+			srv.record(&Message{name, msg.message, msg.fullsource})
 		} else if msg.command == "NOTICE" {
 			srv.client.write <- msg.raw
 			if len(srv.serverConfig.Ident) > 0 && msg.source == "NickServ" && strings.HasPrefix(msg.message, "This nickname is registered and protected") {
