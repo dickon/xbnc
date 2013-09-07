@@ -60,7 +60,7 @@ func (cc ClientConnection) Start() {
 	go func() {
 		for {
 			cmesg := <-cc.output
-			n, err := cc.writer.WriteString(cmesg.message)
+			n, err := cc.writer.WriteString(cmesg.message + "\r\n")
 			if err != nil {
 				fmt.Printf("writestring %s %d error: %v\n", cmesg.why, n, err)
 			}
