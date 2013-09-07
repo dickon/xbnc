@@ -88,16 +88,20 @@ func (cc ClientConnection) Start() {
 				cc.login = msg.param[0]
 			}
 			if !cc.registered && cc.nick != "" && cc.login != "" {
-				cc.output <- ClientOut{fmt.Sprintf("%03d %s :Welcome to XBNC %s!%s@%s", RPL_WELCOME, cc.nick, cc.nick, cc.login, cc.address), "logged in"}
-				cc.output <- ClientOut{fmt.Sprintf("%03d %s :Your host is %s", RPL_YOURHOST, cc.nick, conf.Hostname), "logged in"}
-				cc.output <- ClientOut{fmt.Sprintf("%03d %s :This server was created today", RPL_CREATED, cc.nick), "logged in"} // TODO: give proper date
-				cc.output <- ClientOut{fmt.Sprintf("%03d %s :%s XBNC2.0 iowghraAsORTVSxNCWqBzvdHtGpI lvhopsmntikrRcaqOALQbSeIKVfMCuzNTGjZ", RPL_MYINFO, cc.nick, conf.Hostname), "logged in"}
-				cc.output <- ClientOut{fmt.Sprintf("%03d %s ::CHANTYPES=# NETWORK=XBNC PREFIX=(qaohv)~&@%+ CASEMAPPING=ascii :are supported by this serVer", RPL_BOUNCE, cc.nick), "logged in"}
+				cc.Send(RPL_WELCOME, "Welcome to XBNC "+cc.nick+"!"+cc.login+"@"+cc.address, "logged in")
+				cc.Send(RPL_YOURHOST, "Your host is "+conf.Hostname, "logged in")
+				cc.Send(RPL_CREATED, "This server was created today", "logged in") // TODO correct date
+				cc.Send(RPL_MYINFO, conf.Hostname+" XBNC2.0 iowghraAsORTVSxNCWqBzvdHtGpI lvhopsmntikrRcaqOALQbSeIKVfMCuzNTGjZ", "logged in")
+				cc.Send(RPL_BOUNCE, "CHANTYPES=# NETWORK=XBNC PREFIX=(qaohv)~&@%+ CASEMAPPING=ascii :are supported by this serVer", "logged in")
 				cc.registrar.Subscribe(cc.regnotify)
 			}
 		}
 
 	}()
+}
+
+func (cc *ClientConnection) Send(code int, payload string, why string) {
+	cc.output <- ClientOut{fmt.Sprintf("%03d %s :%s", code, cc.nick, payload), "logged in"}
 }
 
 func (lisn *IRCListener) Listen() error {
