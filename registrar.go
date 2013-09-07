@@ -17,7 +17,7 @@ func (message Message) Render() string {
 
 func (message Message) Command(entry *Entry, cc *ClientConnection) string {
 	channel := []rune(message.channel)
-	return fmt.Sprintf("PRIVMSG %c%c%s :%s (%d)", channel[0], entry.server, string(channel[1:]), message.text, entry.sequenceNumber)
+	return fmt.Sprintf(":%s PRIVMSG %c%c%s :%s (%d)", message.author, channel[0], entry.server, string(channel[1:]), message.text, entry.sequenceNumber)
 }
 
 type OtherJoin struct {
