@@ -15,7 +15,7 @@ func (message Message) Render() string {
 	return fmt.Sprintf("%s on %s said '%s'", message.author, message.channel, message.text)
 }
 
-func (message Message) Command(entry *Entry) string {
+func (message Message) Command(entry *Entry, cc *ClientConnection) string {
 	channel := []rune(message.channel)
 	return fmt.Sprintf("PRIVMSG %c%c%s :%s (%d)", channel[0], entry.server, string(channel[1:]), message.text, entry.sequenceNumber)
 }
@@ -29,7 +29,7 @@ func (join OtherJoin) Render() string {
 	return join.channel + " joined by " + join.author
 }
 
-func (join OtherJoin) Command(entry *Entry) string {
+func (join OtherJoin) Command(entry *Entry, cc *ClientConnection) string {
 	return fmt.Sprintf(":%s 353 %c%s %s", conf.Hostname, entry.server, join.channel, join.author)
 }
 
@@ -41,9 +41,9 @@ func (join MyJoin) Render() string {
 	return "joined " + join.channel
 }
 
-func (join MyJoin) Command(entry *Entry) string {
+func (join MyJoin) Command(entry *Entry, cc *ClientConnection) string {
 	channel := []rune(join.channel)
-	return fmt.Sprintf("JOIN :%c%c%s", channel[0], entry.server, string(channel[1:]))
+	return fmt.Sprintf(":%s!%s@%s JOIN :%c%c%s", cc.nick, cc.login, cc.address, channel[0], entry.server, string(channel[1:]))
 }
 
 type TopicSet struct {
@@ -56,13 +56,13 @@ func (topic TopicSet) Render() string {
 	return topic.channel + " topic set to " + topic.text + " by " + topic.author
 }
 
-func (topic TopicSet) Command(entry *Entry) string {
+func (topic TopicSet) Command(entry *Entry, cc *ClientConnection) string {
 	return ""
 }
 
 type Inspecter interface {
 	Render() string
-	Command(entry *Entry) string
+	Command(entry *Entry, cc *ClientConnection) string
 }
 
 type Entry struct {
