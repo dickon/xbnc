@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"sync"
 	"time"
 )
 
@@ -60,10 +61,11 @@ func (entry *Entry) Render() string {
 }
 
 type Registrar struct {
-	entries   []Entry
-	notifiers []chan Entry
-	recorder  chan Entry
-	servers   map[rune]*IRCServer
+	entries      []Entry
+	notifiers    []chan Entry
+	recorder     chan Entry
+	servers      map[rune]*IRCServer
+	serversMutex sync.Mutex
 }
 
 func CreateRegistrar() *Registrar {
@@ -71,7 +73,7 @@ func CreateRegistrar() *Registrar {
 	notifiers := make([]chan Entry, 0, 100)
 	recorder := make(chan Entry, 100)
 	servers := make(map[rune]*IRCServer)
-	reg := &Registrar{entries, notifiers, recorder, servers}
+	reg := &Registrar{entries: entries, notifiers: notifiers, recorder: recorder, servers: servers}
 	go func() {
 		for {
 			entry := <-reg.recorder

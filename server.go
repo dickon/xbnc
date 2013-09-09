@@ -57,7 +57,15 @@ func CreateServer(registrar *Registrar, client *IRCClient, sc ServerConfig) (*IR
 		return nil, err
 	}
 	serverId := ([]rune(sc.Name))[0]
-	return &IRCServer{registrar, client, false, nil, read, write, addr, channels, sc, serverId, ""}, nil
+	newServer := &IRCServer{registrar, client, false, nil, read, write, addr, channels, sc, serverId, ""}
+	registrar.serversMutex.Lock()
+	defer registrar.serversMutex.Unlock()
+	_, already := registrar.servers[serverId]
+	if already {
+		return nil, errors.New("ERROR: already have server starting with " + string(sc.Name[0]) + " when adding " + sc.Name)
+	}
+	registrar.servers[serverId] = newServer
+	return newServer, nil
 }
 
 func (srv *IRCServer) Connect() error {
