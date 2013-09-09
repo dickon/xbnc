@@ -63,13 +63,15 @@ type Registrar struct {
 	entries   []Entry
 	notifiers []chan Entry
 	recorder  chan Entry
+	servers   map[rune]*IRCServer
 }
 
 func CreateRegistrar() *Registrar {
 	entries := make([]Entry, 0, 100)
 	notifiers := make([]chan Entry, 0, 100)
 	recorder := make(chan Entry, 100)
-	reg := &Registrar{entries, notifiers, recorder}
+	servers := make(map[rune]*IRCServer)
+	reg := &Registrar{entries, notifiers, recorder, servers}
 	go func() {
 		for {
 			entry := <-reg.recorder
