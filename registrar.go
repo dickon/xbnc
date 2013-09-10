@@ -58,6 +58,20 @@ type Entry struct {
 
 func (entry *Entry) Render() string {
 	return fmt.Sprintf("entry %05d server %c: %s", entry.sequenceNumber, entry.server, entry.payload.Render())
+
+}
+
+type ChannelMembers struct {
+	channel string
+	members []string
+}
+
+func (cm *ChannelMembers) Render() string {
+	return fmt.Sprintf("channel %s members %v", cm.channel, cm.members)
+}
+
+func (cm *ChannelMembers) Command(entry *Entry, cc *ClientConnection) string {
+	return fmt.Sprintf(":%s %03d", cc.address, RPL_NAMREPLY)
 }
 
 type Registrar struct {

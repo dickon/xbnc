@@ -316,6 +316,7 @@ func (srv *IRCServer) handleReplyCode(msg *IRCMessage) {
 		for _, name := range strings.Fields(msg.message) {
 			channel.members[name] = ""
 		}
+		srv.record(&ChannelMembers{channel: msg.param[2], members: strings.Fields(msg.message)})
 	} else if msg.replycode == RPL_ENDOFNAMES {
 		srv.client.write <- ":" + conf.Hostname + " " + replycode + " " + msg.param[0] + " " + srv.client.hostToChannel(srv.serverConfig.Host, msg.param[1]) + " :" + msg.message
 		srv.GetChannel(msg.param[1]).Update(srv)
