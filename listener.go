@@ -100,6 +100,7 @@ func (cc ClientConnection) Start() {
 				if !exists {
 					fmt.Printf("unknown server %s\n", name[1])
 				} else {
+					// TODO: actually pass the MODE request to the server
 					sname := string(name[0]) + string(name[2:])
 					channel, cexists := si.channels[sname]
 					fmt.Printf("server %s channel %s exists %v\n", name[1], sname, cexists)
