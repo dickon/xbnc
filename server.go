@@ -173,22 +173,6 @@ func (srv *IRCServer) GetChannel(channel string) *IRCChannel {
 	return tmp
 }
 
-func (channel *IRCChannel) Update(srv *IRCServer) {
-	if channel.name == "" {
-		fmt.Printf("Channel missing name; not recording\n")
-		return
-	}
-	if channel.creationTime == 0 {
-		fmt.Printf("Channel %s creation time unknown; not recording\n", channel.name)
-		return
-	}
-	if channel.mode == "" {
-		fmt.Printf("Channel %s mode unknown; not recording\n", channel.name)
-		return
-	}
-	srv.record(channel.Copy())
-}
-
 func (srv *IRCServer) handler() {
 	for srv.connected {
 		msg := <-srv.read
@@ -319,7 +303,6 @@ func (srv *IRCServer) handleReplyCode(msg *IRCMessage) {
 		srv.record(&ChannelMembers{channel: msg.param[2], members: strings.Fields(msg.message)})
 	} else if msg.replycode == RPL_ENDOFNAMES {
 		srv.client.write <- ":" + conf.Hostname + " " + replycode + " " + msg.param[0] + " " + srv.client.hostToChannel(srv.serverConfig.Host, msg.param[1]) + " :" + msg.message
-		srv.GetChannel(msg.param[1]).Update(srv)
 		srv.record(&EndOfNames{channel: msg.param[1]})
 	} else if msg.replycode == RPL_ENDOFWHO {
 		srv.client.write <- ":" + conf.Hostname + " " + replycode + " " + msg.param[0] + " " + srv.client.hostToChannel(srv.serverConfig.Host, msg.param[1]) + " :" + msg.message
@@ -327,7 +310,6 @@ func (srv *IRCServer) handleReplyCode(msg *IRCMessage) {
 		srv.client.write <- ":" + conf.Hostname + " " + replycode + " " + msg.param[0] + " " + srv.client.hostToChannel(srv.serverConfig.Host, msg.param[1]) + " " + msg.param[2]
 		channel := srv.GetChannel(msg.param[1])
 		channel.mode = msg.param[2]
-		channel.Update(srv)
 		srv.record(&ChannelMode{channel: msg.param[1], mode: msg.param[2]})
 	} else if msg.replycode == RPL_CREATIONTIME { // Channel mode
 		srv.client.write <- ":" + conf.Hostname + " " + replycode + " " + msg.param[0] + " " + srv.client.hostToChannel(srv.serverConfig.Host, msg.param[1]) + " " + msg.param[2]
@@ -338,7 +320,6 @@ func (srv *IRCServer) handleReplyCode(msg *IRCMessage) {
 		} else {
 			channel.creationTime = ct
 		}
-		channel.Update(srv)
 		srv.record(&CreationTime{channel: msg.param[1], time: msg.param[2]})
 	} else if msg.replycode == 352 { // Channel who reply
 		srv.client.write <- ":" + conf.Hostname + " " + replycode + " " + msg.param[0] + " " + srv.client.hostToChannel(srv.serverConfig.Host, msg.param[1]) + " " + msg.param[2] + " " + msg.param[3] + " " + conf.Hostname + " " + msg.param[5] + " " + msg.param[6] + " :" + msg.message

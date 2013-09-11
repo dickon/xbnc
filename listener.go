@@ -96,27 +96,12 @@ func (cc ClientConnection) Start() {
 				cc.login = msg.param[0]
 			case "MODE":
 				name := []rune(msg.param[0])
-				si, exists := cc.servers[name[1]]
+				server, exists := cc.registrar.servers[name[1]]
 				if !exists {
 					fmt.Printf("unknown server %s\n", name[1])
 				} else {
-					// TODO: actually pass the MODE request to the server
 					sname := string(name[0]) + string(name[2:])
-					channel, cexists := si.channels[sname]
-					fmt.Printf("server %s channel %s exists %v\n", name[1], sname, cexists)
-					if cexists {
-						members := make([]string, len(channel.members))
-						i := 0
-						for k, _ := range channel.members {
-							members[i] = k
-							i++
-						}
-						// TODO replace = with correct char, depending on join mode
-						cc.Send(RPL_NAMREPLY, " = "+msg.param[0]+" :"+strings.Join(members, " "), "MODE response")
-						cc.Send(RPL_ENDOFNAMES, msg.param[0]+" :End of /NAMES list.", "MODE response")
-						cc.Send(RPL_CHANNELMODEIS, msg.param[0]+" "+channel.mode, "MODE response")
-						cc.Send(RPL_CREATIONTIME, fmt.Sprintf("%s %d", msg.param[0], channel.creationTime), "MODE response")
-					}
+					server.write <- "MODE " + sname
 				}
 
 			}

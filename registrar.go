@@ -67,7 +67,7 @@ type EndOfNames struct {
 }
 
 func (eon *EndOfNames) Command(entry *Entry, cc *ClientConnection) string {
-	return fmt.Sprintf(":%s %03d %s :End of /NAMES list.", cc.address, RPL_ENDOFNAMES, cc.nick, clientChannelName(entry.server, eon.channel))
+	return fmt.Sprintf(":%s %03d %s %s :End of /NAMES list.", cc.address, RPL_ENDOFNAMES, cc.nick, clientChannelName(entry.server, eon.channel))
 }
 
 type ChannelMode struct {
