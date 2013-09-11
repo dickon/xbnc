@@ -18,13 +18,8 @@ func clientChannelName(serverID rune, serverChannel string) string {
 	return string(name[0]) + string(serverID) + string(name[1:])
 }
 
-func (message Message) Command(entry *Entry, cc *ClientConnection) string {
-	return fmt.Sprintf(":%s PRIVMSG %s :%s (%d)", message.author, clientChannelName(entry.server, message.channel), message.text, entry.sequenceNumber)
-}
-
-func (channel IRCChannel) Command(entry *Entry, cc *ClientConnection) string {
-	name := []rune(channel.name)
-	return fmt.Sprintf(":%s!%s@%s JOIN :%c%c%s", cc.nick, cc.login, cc.address, name[0], entry.server, string(name[1:]))
+func (message Message) Command(server rune, cc *ClientConnection) string {
+	return fmt.Sprintf(":%s PRIVMSG %s :%s", message.author, clientChannelName(server, message.channel), message.text)
 }
 
 type TopicSet struct {
@@ -33,12 +28,12 @@ type TopicSet struct {
 	author  string
 }
 
-func (topic TopicSet) Command(entry *Entry, cc *ClientConnection) string {
+func (topic TopicSet) Command(server rune, cc *ClientConnection) string {
 	return ""
 }
 
 type Inspecter interface {
-	Command(entry *Entry, cc *ClientConnection) string
+	Command(server rune, cc *ClientConnection) string
 }
 
 type Entry struct {
@@ -58,16 +53,16 @@ type ChannelMembers struct {
 	members []string
 }
 
-func (cm *ChannelMembers) Command(entry *Entry, cc *ClientConnection) string {
-	return fmt.Sprintf(":%s %03d %s @ %s :%s", cc.address, RPL_NAMREPLY, cc.nick, clientChannelName(entry.server, cm.channel), strings.Join(cm.members, " "))
+func (cm *ChannelMembers) Command(server rune, cc *ClientConnection) string {
+	return fmt.Sprintf(":%s %03d %s @ %s :%s", cc.address, RPL_NAMREPLY, cc.nick, clientChannelName(server, cm.channel), strings.Join(cm.members, " "))
 }
 
 type EndOfNames struct {
 	channel string
 }
 
-func (eon *EndOfNames) Command(entry *Entry, cc *ClientConnection) string {
-	return fmt.Sprintf(":%s %03d %s %s :End of /NAMES list.", cc.address, RPL_ENDOFNAMES, cc.nick, clientChannelName(entry.server, eon.channel))
+func (eon *EndOfNames) Command(server rune, cc *ClientConnection) string {
+	return fmt.Sprintf(":%s %03d %s %s :End of /NAMES list.", cc.address, RPL_ENDOFNAMES, cc.nick, clientChannelName(server, eon.channel))
 }
 
 type ChannelMode struct {
@@ -75,8 +70,8 @@ type ChannelMode struct {
 	mode    string
 }
 
-func (cm *ChannelMode) Command(entry *Entry, cc *ClientConnection) string {
-	return fmt.Sprintf(":%s %03d %s %s %s", cc.address, RPL_CHANNELMODEIS, cc.nick, clientChannelName(entry.server, cm.channel), cm.mode)
+func (cm *ChannelMode) Command(server rune, cc *ClientConnection) string {
+	return fmt.Sprintf(":%s %03d %s %s %s", cc.address, RPL_CHANNELMODEIS, cc.nick, clientChannelName(server, cm.channel), cm.mode)
 }
 
 type CreationTime struct {
@@ -84,8 +79,16 @@ type CreationTime struct {
 	time    string
 }
 
-func (ct *CreationTime) Command(entry *Entry, cc *ClientConnection) string {
-	return fmt.Sprintf(":%s %03d %s %s %s", cc.address, RPL_CREATIONTIME, cc.nick, clientChannelName(entry.server, ct.channel), ct.time)
+func (ct *CreationTime) Command(server rune, cc *ClientConnection) string {
+	return fmt.Sprintf(":%s %03d %s %s %s", cc.address, RPL_CREATIONTIME, cc.nick, clientChannelName(server, ct.channel), ct.time)
+}
+
+type Join struct {
+	channel string
+}
+
+func (join *Join) Command(server rune, cc *ClientConnection) string {
+	return fmt.Sprintf(":%s!%s@%s JOIN :%s", cc.nick, cc.login, cc.address, clientChannelName(server, join.channel))
 }
 
 type Registrar struct {

@@ -42,7 +42,6 @@ type ClientConnection struct {
 	address    string
 	output     chan ClientOut
 	registered bool // set to true when registration is complete
-	servers    map[rune]ServerInfo
 }
 
 func (cc ClientConnection) Start() {
@@ -50,17 +49,8 @@ func (cc ClientConnection) Start() {
 	go func() {
 		for {
 			entry := <-cc.regnotify
-			_, exists := cc.servers[entry.server]
-			if !exists {
-				cc.servers[entry.server] = ServerInfo{make(map[string]IRCChannel)}
-			}
-			si, _ := cc.servers[entry.server]
 			fmt.Printf("handling %s\n", entry.Render())
-			str := entry.payload.Command(&entry, &cc)
-			switch t := entry.payload.(type) {
-			case IRCChannel:
-				si.channels[t.name] = t
-			}
+			str := entry.payload.Command(entry.server, &cc)
 			cc.output <- ClientOut{str, "via registrar"}
 		}
 	}()
@@ -142,7 +132,7 @@ func (lisn *IRCListener) Listen() error {
 			remaddr := conn.RemoteAddr()
 			segments := strings.Split(remaddr.String(), ":")
 			fmt.Printf("Accepted incoming connection on %s\n", segments[0])
-			(ClientConnection{conn, bufio.NewReader(conn), bufio.NewWriter(conn), make(chan Entry, 100), lisn.registrar, "", "", segments[0], make(chan ClientOut, 100), false, make(map[rune]ServerInfo)}).Start()
+			(ClientConnection{conn, bufio.NewReader(conn), bufio.NewWriter(conn), make(chan Entry, 100), lisn.registrar, "", "", segments[0], make(chan ClientOut, 100), false}).Start()
 		}
 	}()
 	return nil

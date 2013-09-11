@@ -138,7 +138,7 @@ func (srv *IRCServer) Connect() error {
 			if msg.replycode == 1 {
 				srv.givenNick = msg.param[0]
 				fmt.Printf("set givenNick to %s\n", srv.givenNick)
-				srv.record(srv.GetChannel("#hello").Copy())
+				srv.record(&Join{channel: "#hello"})
 			}
 			srv.client.write <- ":-!xbnc@xbnc PRIVMSG " + srv.client.hostToChannel(srv.serverConfig.Host, "") + " :" + msg.message
 			srv.record(&Message{"#hello", msg.message, "server"})
@@ -187,6 +187,7 @@ func (srv *IRCServer) handler() {
 		} else if msg.command == "JOIN" {
 			channel := srv.GetChannel(msg.param[0])
 			if msg.source == srv.givenNick {
+				srv.record(&Join{channel: msg.message})
 				srv.client.joinChannel(srv.client.hostToChannel(srv.serverConfig.Host, msg.message), true)
 				srv.write <- "MODE " + msg.message
 			} else {
