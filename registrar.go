@@ -18,16 +18,8 @@ func clientChannelName(serverID rune, serverChannel string) string {
 	return string(name[0]) + string(serverID) + string(name[1:])
 }
 
-func (message Message) Render() string {
-	return fmt.Sprintf("%s on %s said '%s'", message.author, message.channel, message.text)
-}
-
 func (message Message) Command(entry *Entry, cc *ClientConnection) string {
 	return fmt.Sprintf(":%s PRIVMSG %s :%s (%d)", message.author, clientChannelName(entry.server, message.channel), message.text, entry.sequenceNumber)
-}
-
-func (channel IRCChannel) Render() string {
-	return "joined " + channel.name
 }
 
 func (channel IRCChannel) Command(entry *Entry, cc *ClientConnection) string {
@@ -41,16 +33,11 @@ type TopicSet struct {
 	author  string
 }
 
-func (topic TopicSet) Render() string {
-	return topic.channel + " topic set to " + topic.text + " by " + topic.author
-}
-
 func (topic TopicSet) Command(entry *Entry, cc *ClientConnection) string {
 	return ""
 }
 
 type Inspecter interface {
-	Render() string
 	Command(entry *Entry, cc *ClientConnection) string
 }
 
@@ -62,17 +49,13 @@ type Entry struct {
 }
 
 func (entry *Entry) Render() string {
-	return fmt.Sprintf("entry %05d server %c: %s", entry.sequenceNumber, entry.server, entry.payload.Render())
+	return fmt.Sprintf("entry %05d server %c: %#v", entry.sequenceNumber, entry.server, entry.payload)
 
 }
 
 type ChannelMembers struct {
 	channel string
 	members []string
-}
-
-func (cm *ChannelMembers) Render() string {
-	return fmt.Sprintf("channel %s members %v", cm.channel, cm.members)
 }
 
 func (cm *ChannelMembers) Command(entry *Entry, cc *ClientConnection) string {
@@ -124,7 +107,7 @@ func (reg *Registrar) AddNotifier(prefix string) {
 	go func() {
 		for {
 			entry := <-echonotify
-			fmt.Printf("%s recorded %d:%s\n", prefix, entry.sequenceNumber, entry.payload.Render())
+			fmt.Printf("%s recorded %d:%#v\n", prefix, entry.sequenceNumber, entry.payload)
 		}
 	}()
 	reg.Subscribe(echonotify)
