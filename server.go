@@ -320,6 +320,7 @@ func (srv *IRCServer) handleReplyCode(msg *IRCMessage) {
 	} else if msg.replycode == RPL_ENDOFNAMES {
 		srv.client.write <- ":" + conf.Hostname + " " + replycode + " " + msg.param[0] + " " + srv.client.hostToChannel(srv.serverConfig.Host, msg.param[1]) + " :" + msg.message
 		srv.GetChannel(msg.param[1]).Update(srv)
+		srv.record(&EndOfNames{channel: msg.param[1]})
 	} else if msg.replycode == RPL_ENDOFWHO {
 		srv.client.write <- ":" + conf.Hostname + " " + replycode + " " + msg.param[0] + " " + srv.client.hostToChannel(srv.serverConfig.Host, msg.param[1]) + " :" + msg.message
 	} else if msg.replycode == RPL_CHANNELMODEIS { // Channel mode
@@ -327,6 +328,7 @@ func (srv *IRCServer) handleReplyCode(msg *IRCMessage) {
 		channel := srv.GetChannel(msg.param[1])
 		channel.mode = msg.param[2]
 		channel.Update(srv)
+		srv.record(&ChannelMode{channel: msg.param[1], mode: msg.param[2]})
 	} else if msg.replycode == RPL_CREATIONTIME { // Channel mode
 		srv.client.write <- ":" + conf.Hostname + " " + replycode + " " + msg.param[0] + " " + srv.client.hostToChannel(srv.serverConfig.Host, msg.param[1]) + " " + msg.param[2]
 		channel := srv.GetChannel(msg.param[1])
@@ -337,6 +339,7 @@ func (srv *IRCServer) handleReplyCode(msg *IRCMessage) {
 			channel.creationTime = ct
 		}
 		channel.Update(srv)
+		srv.record(&CreationTime{channel: msg.param[1], time: msg.param[2]})
 	} else if msg.replycode == 352 { // Channel who reply
 		srv.client.write <- ":" + conf.Hostname + " " + replycode + " " + msg.param[0] + " " + srv.client.hostToChannel(srv.serverConfig.Host, msg.param[1]) + " " + msg.param[2] + " " + msg.param[3] + " " + conf.Hostname + " " + msg.param[5] + " " + msg.param[6] + " :" + msg.message
 	} else {

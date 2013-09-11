@@ -62,6 +62,32 @@ func (cm *ChannelMembers) Command(entry *Entry, cc *ClientConnection) string {
 	return fmt.Sprintf(":%s %03d %s @ %s :%s", cc.address, RPL_NAMREPLY, cc.nick, clientChannelName(entry.server, cm.channel), strings.Join(cm.members, " "))
 }
 
+type EndOfNames struct {
+	channel string
+}
+
+func (eon *EndOfNames) Command(entry *Entry, cc *ClientConnection) string {
+	return fmt.Sprintf(":%s %03d %s :End of /NAMES list.", cc.address, RPL_ENDOFNAMES, cc.nick, clientChannelName(entry.server, eon.channel))
+}
+
+type ChannelMode struct {
+	channel string
+	mode    string
+}
+
+func (cm *ChannelMode) Command(entry *Entry, cc *ClientConnection) string {
+	return fmt.Sprintf(":%s %03d %s %s %s", cc.address, RPL_CHANNELMODEIS, cc.nick, clientChannelName(entry.server, cm.channel), cm.mode)
+}
+
+type CreationTime struct {
+	channel string
+	time    string
+}
+
+func (ct *CreationTime) Command(entry *Entry, cc *ClientConnection) string {
+	return fmt.Sprintf(":%s %03d %s %s %s", cc.address, RPL_CREATIONTIME, cc.nick, clientChannelName(entry.server, ct.channel), ct.time)
+}
+
 type Registrar struct {
 	entries      []Entry
 	notifiers    []chan Entry
