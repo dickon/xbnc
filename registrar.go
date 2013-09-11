@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 )
@@ -12,13 +13,17 @@ type Message struct {
 	author  string
 }
 
+func clientChannelName(serverID rune, serverChannel string) string {
+	name := []rune(serverChannel)
+	return string(name[0]) + string(serverID) + string(name[1:])
+}
+
 func (message Message) Render() string {
 	return fmt.Sprintf("%s on %s said '%s'", message.author, message.channel, message.text)
 }
 
 func (message Message) Command(entry *Entry, cc *ClientConnection) string {
-	channel := []rune(message.channel)
-	return fmt.Sprintf(":%s PRIVMSG %c%c%s :%s (%d)", message.author, channel[0], entry.server, string(channel[1:]), message.text, entry.sequenceNumber)
+	return fmt.Sprintf(":%s PRIVMSG %s :%s (%d)", message.author, clientChannelName(entry.server, message.channel), message.text, entry.sequenceNumber)
 }
 
 func (channel IRCChannel) Render() string {
@@ -71,7 +76,7 @@ func (cm *ChannelMembers) Render() string {
 }
 
 func (cm *ChannelMembers) Command(entry *Entry, cc *ClientConnection) string {
-	return fmt.Sprintf(":%s %03d", cc.address, RPL_NAMREPLY)
+	return fmt.Sprintf(":%s %03d %s @ %s :%s", cc.address, RPL_NAMREPLY, cc.nick, clientChannelName(entry.server, cm.channel), strings.Join(cm.members, " "))
 }
 
 type Registrar struct {
