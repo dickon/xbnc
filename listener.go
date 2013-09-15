@@ -124,6 +124,8 @@ func (cc *ClientConnection) handleClientMessage(str string) {
 			server.write <- PRIVMSG + " " + sname + " :" + msg.message
 			server.record(&Message{sname, msg.message, server.givenNick})
 		}
+	default:
+		fmt.Printf("Unhandled client command %s", msg.command)
 	}
 	if !cc.registered && cc.nick != "" && cc.login != "" {
 		cc.Send(RPL_WELCOME, ":Welcome to XBNC "+cc.nick+"!"+cc.login+"@"+cc.address, "logged in")
