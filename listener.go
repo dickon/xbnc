@@ -95,39 +95,44 @@ func (cc ClientConnection) Start() {
 				break
 			}
 			fmt.Printf("readc %#v\n", str)
-
-			msg := ParseMessage(str)
-			fmt.Printf("got client command %#v message %#v\n", msg.command, msg.message)
-
-			switch msg.command {
-			case NICK:
-				cc.nick = msg.param[0]
-			case USER:
-				cc.login = msg.param[0]
-			case MODE:
-				sname, server := getServer(msg.param[0], cc.registrar)
-				if server != nil {
-					server.write <- MODE + " " + sname
-				}
-			case PRIVMSG:
-				sname, server := getServer(msg.param[0], cc.registrar)
-				if server != nil {
-					server.write <- PRIVMSG + " " + sname + " :" + msg.message
-					server.record(&Message{sname, msg.message, server.givenNick})
-				}
-			}
-			if !cc.registered && cc.nick != "" && cc.login != "" {
-				cc.Send(RPL_WELCOME, ":Welcome to XBNC "+cc.nick+"!"+cc.login+"@"+cc.address, "logged in")
-				cc.Send(RPL_YOURHOST, ":Your host is "+conf.Hostname, "logged in")
-				cc.Send(RPL_CREATED, ":This server was created today", "logged in") // TODO correct date
-				cc.Send(RPL_MYINFO, ":"+conf.Hostname+" XBNC2.0 iowghraAsORTVSxNCWqBzvdHtGpI lvhopsmntikrRcaqOALQbSeIKVfMCuzNTGjZ", "logged in")
-				cc.Send(RPL_BOUNCE, ":CHANTYPES=# NETWORK=XBNC PREFIX=(qaohv)~&@%+ CASEMAPPING=ascii :are supported by this serVer", "logged in")
-				cc.registered = true
-				cc.registrar.Subscribe(cc.regnotify)
-			}
+			cc.handleClientMessage(str)
 		}
 
 	}()
+}
+
+func (cc *ClientConnection) handleClientMessage(str string) {
+
+	msg := ParseMessage(str)
+	fmt.Printf("got client command %#v message %#v\n", msg.command, msg.message)
+
+	switch msg.command {
+	case NICK:
+		cc.nick = msg.param[0]
+	case USER:
+		cc.login = msg.param[0]
+	case MODE:
+		sname, server := getServer(msg.param[0], cc.registrar)
+		if server != nil {
+			server.write <- MODE + " " + sname
+		}
+	case PRIVMSG:
+		sname, server := getServer(msg.param[0], cc.registrar)
+		if server != nil {
+			server.write <- PRIVMSG + " " + sname + " :" + msg.message
+			server.record(&Message{sname, msg.message, server.givenNick})
+		}
+	}
+	if !cc.registered && cc.nick != "" && cc.login != "" {
+		cc.Send(RPL_WELCOME, ":Welcome to XBNC "+cc.nick+"!"+cc.login+"@"+cc.address, "logged in")
+		cc.Send(RPL_YOURHOST, ":Your host is "+conf.Hostname, "logged in")
+		cc.Send(RPL_CREATED, ":This server was created today", "logged in") // TODO correct date
+		cc.Send(RPL_MYINFO, ":"+conf.Hostname+" XBNC2.0 iowghraAsORTVSxNCWqBzvdHtGpI lvhopsmntikrRcaqOALQbSeIKVfMCuzNTGjZ", "logged in")
+		cc.Send(RPL_BOUNCE, ":CHANTYPES=# NETWORK=XBNC PREFIX=(qaohv)~&@%+ CASEMAPPING=ascii :are supported by this serVer", "logged in")
+		cc.registered = true
+		cc.registrar.Subscribe(cc.regnotify)
+	}
+
 }
 
 func (cc *ClientConnection) Send(code int, payload string, why string) {
