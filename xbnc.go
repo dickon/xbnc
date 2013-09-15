@@ -8,12 +8,11 @@ import (
 func main() {
 	reg := CreateRegistrar()
 	readConfig()
-	client := CreateClient(reg, conf.Nick, conf.Login, conf.Ident)
 	for _, serverConf := range conf.Servers {
 		go func(sc *ServerConfig) {
-			server := client.addServer(*sc)
-			if server == nil {
-				fmt.Printf("failed to connect to %v", sc)
+			server, err := CreateServer(reg, *sc)
+			if err != nil {
+				fmt.Printf("failed to connect to %v: error %v", sc, err)
 				os.Exit(5)
 			}
 			for _, channel := range sc.Channels {
@@ -22,7 +21,7 @@ func main() {
 			}
 		}(serverConf)
 	}
-	lisn, err := CreateListener(reg, client, conf.Port)
+	lisn, err := CreateListener(reg, conf.Port)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(4)

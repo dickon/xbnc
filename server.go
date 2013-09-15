@@ -56,28 +56,21 @@ func CreateServer(registrar *Registrar, sc ServerConfig) (*IRCServer, error) {
 		return nil, err
 	}
 	serverId := ([]rune(sc.Name))[0]
-	newServer := &IRCServer{registrar, false, nil, read, write, addr, channels, sc, serverId, ""}
+	srv := &IRCServer{registrar, false, nil, read, write, addr, channels, sc, serverId, ""}
 	registrar.serversMutex.Lock()
 	defer registrar.serversMutex.Unlock()
 	_, already := registrar.servers[serverId]
 	if already {
 		return nil, errors.New("ERROR: already have server starting with " + string(sc.Name[0]) + " when adding " + sc.Name)
 	}
-	registrar.servers[serverId] = newServer
-	return newServer, nil
-}
-
-func (srv *IRCServer) Connect() error {
-	if srv.connected {
-		return nil
-	}
+	registrar.servers[serverId] = srv
 	var reader *bufio.Reader
 	var writer *bufio.Writer
 	if srv.Ssl {
 		config := &tls.Config{InsecureSkipVerify: true}
 		conn, err := tls.Dial("tcp", srv.Host+":"+strconv.Itoa(srv.Port), config)
 		if err != nil {
-			return err
+			return srv, err
 		}
 		reader = bufio.NewReader(conn)
 		writer = bufio.NewWriter(conn)
@@ -85,7 +78,7 @@ func (srv *IRCServer) Connect() error {
 	} else {
 		sock, err := net.DialTCP("tcp4", nil, srv.addr)
 		if err != nil {
-			return err
+			return srv, err
 		}
 		reader = bufio.NewReader(sock)
 		writer = bufio.NewWriter(sock)
@@ -149,12 +142,12 @@ func (srv *IRCServer) Connect() error {
 			srv.write <- "NICK " + srv.Nick
 		} else if msg.replycode >= 400 && msg.replycode != 439 {
 			srv.Close()
-			return errors.New("Could not log into IRC server: " + msg.raw)
+			return srv, errors.New("Could not log into IRC server: " + msg.raw)
 		}
 	}
 
 	go srv.handler()
-	return nil
+	return srv, nil
 }
 
 func (srv *IRCServer) record(payload Inspecter) {

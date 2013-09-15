@@ -9,18 +9,16 @@ import (
 )
 
 type IRCListener struct {
-	addr *net.TCPAddr
-
-	client    *IRCClient
+	addr      *net.TCPAddr
 	registrar *Registrar
 }
 
-func CreateListener(registrar *Registrar, client *IRCClient, port int) (*IRCListener, error) {
+func CreateListener(registrar *Registrar, port int) (*IRCListener, error) {
 	addr, err := net.ResolveTCPAddr("tcp4", ":"+strconv.Itoa(port))
 	if err != nil {
 		return nil, err
 	}
-	return &IRCListener{addr, client, registrar}, nil
+	return &IRCListener{addr, registrar}, nil
 }
 
 type ClientOut struct {

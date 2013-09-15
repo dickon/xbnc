@@ -195,12 +195,6 @@ func (client *IRCClient) addServer(sc ServerConfig) *IRCServer {
 		client.write <- ":-!xbnc@xbnc PRIVMSG #xbnc :Error: " + err.Error()
 		return nil
 	}
-	err = srv.Connect()
-	if err != nil {
-		fmt.Println(err)
-		client.write <- ":-!xbnc@xbnc PRIVMSG #xbnc :Error: " + err.Error()
-		return nil
-	}
 	client.servers[sc.Host] = srv
 	client.write <- ":-!xbnc@xbnc PRIVMSG #xbnc :Connected to \"" + sc.Host + "\" successfully"
 	client.write <- ":" + client.nick + "!" + client.login + "@xbnc JOIN :" + client.hostToChannel(sc.Host, "")
