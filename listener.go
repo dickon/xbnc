@@ -107,6 +107,8 @@ func (cc *ClientConnection) handleClientMessage(str string) {
 	fmt.Printf("got client command %#v message %#v\n", msg.command, msg.message)
 
 	switch msg.command {
+	case PING:
+		cc.output <- ClientOut{":" + conf.Hostname + " " + PONG + conf.Hostname + " :" + msg.param[0], "client ping"}
 	case NICK:
 		cc.nick = msg.param[0]
 	case USER:

@@ -18,6 +18,8 @@ const (
 	RPL_TOPIC         = 332
 	RPL_NAMREPLY      = 353
 	RPL_ENDOFNAMES    = 366
+	PING              = "PING"
+	PONG              = "PONG"
 	PRIVMSG           = "PRIVMSG"
 	MODE              = "MODE"
 	USER              = "USER"
