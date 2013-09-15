@@ -19,7 +19,7 @@ func clientChannelName(serverID rune, serverChannel string) string {
 }
 
 func (message Message) Command(server rune, cc *ClientConnection) string {
-	return fmt.Sprintf(":%s PRIVMSG %s :%s", message.author, clientChannelName(server, message.channel), message.text)
+	return fmt.Sprintf(":%s PRIVMSG %s :%s", string(server)+message.author, clientChannelName(server, message.channel), message.text)
 }
 
 type TopicSet struct {

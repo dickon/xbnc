@@ -104,6 +104,7 @@ func (cc ClientConnection) Start() {
 				sname, server := getServer(msg.param[0], cc.registrar)
 				if server != nil {
 					server.write <- PRIVMSG + " " + sname + " :" + msg.message
+					server.record(&Message{sname, msg.message, server.givenNick})
 				}
 			}
 			if !cc.registered && cc.nick != "" && cc.login != "" {
