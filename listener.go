@@ -57,7 +57,7 @@ func getServer(cchannel string, reg *Registrar) (string, *IRCServer) {
 
 func (cc ClientConnection) Start() {
 
-	go func() {
+	go func() { // send registrar messages down to the output queue
 		for {
 			notification := <-cc.regnotify
 			fmt.Printf("handling %b %s\n", notification.fresh, notification.Render())
@@ -77,7 +77,7 @@ func (cc ClientConnection) Start() {
 		}
 	}()
 
-	go func() {
+	go func() { // dispatch the output queue
 		for {
 			cmesg := <-cc.output
 			n, err := cc.writer.WriteString(cmesg.message + "\r\n")
@@ -89,7 +89,7 @@ func (cc ClientConnection) Start() {
 		}
 	}()
 
-	go func() {
+	go func() { // client message dispatch
 		for {
 			str, err := cc.reader.ReadString('\n')
 			if err != nil {
