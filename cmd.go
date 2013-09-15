@@ -58,7 +58,7 @@ func (client *IRCClient) handleXBNCCMD(msg string) {
 }
 
 func (srv *IRCServer) handleServerCMD(msg string) {
-	serverchan := srv.client.hostToChannel(srv.serverConfig.Host, "")
+	serverchan := srv.client.hostToChannel(srv.Host, "")
 	cmd := ParseMessage(msg)
 	if cmd.command == "JOIN" || cmd.command == "PART" {
 		if len(cmd.param[0]) > 0 {

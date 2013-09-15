@@ -211,7 +211,7 @@ func (client *IRCClient) removeServer(host string) {
 	server, exists := client.servers[host]
 	if exists {
 		for _, channel := range server.channels {
-			client.write <- ":" + client.nick + "!" + client.login + "@xbnc PART " + client.hostToChannel(server.serverConfig.Host, channel.name) + " :Leaving"
+			client.write <- ":" + client.nick + "!" + client.login + "@xbnc PART " + client.hostToChannel(server.Host, channel.name) + " :Leaving"
 		}
 		server.Close()
 		client.write <- ":" + client.nick + "!" + client.login + "@xbnc PART :" + client.hostToChannel(host, "")
