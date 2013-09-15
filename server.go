@@ -227,7 +227,7 @@ func (srv *IRCServer) handler() {
 			}
 		} else if msg.command == "QUIT" {
 			srv.client.write <- ":" + msg.fullsource + " QUIT :" + msg.message
-		} else if msg.command == "PRIVMSG" {
+		} else if msg.command == PRIVMSG {
 			name := msg.param[0]
 			if name == srv.givenNick {
 				name = msg.source
