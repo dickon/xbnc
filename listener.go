@@ -85,10 +85,10 @@ func (cc ClientConnection) Start() {
 				fmt.Printf("readc error: %v\n", err)
 				break
 			}
-			fmt.Printf("readc %v\n", str)
+			fmt.Printf("readc %#v\n", str)
 
-			msg := ParseMessage(str[0 : len(str)-2])
-			fmt.Printf("got client command %v\n", msg.command)
+			msg := ParseMessage(str)
+			fmt.Printf("got client command %#v message %#v\n", msg.command, msg.message)
 
 			switch msg.command {
 			case NICK:
