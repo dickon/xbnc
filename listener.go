@@ -67,8 +67,6 @@ func (cc ClientConnection) Start() {
 					fmt.Printf("ignoring message from me\n")
 					continue
 				}
-			default:
-				fmt.Printf("Unmatched")
 			}
 			str := notification.payload.Command(notification.server, &cc)
 			cc.output <- ClientOut{str, "via registrar"}
