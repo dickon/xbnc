@@ -35,7 +35,7 @@ type ClientConnection struct {
 	conn       *net.TCPConn
 	reader     *bufio.Reader
 	writer     *bufio.Writer
-	regnotify  chan Entry
+	regnotify  chan Notification
 	registrar  *Registrar
 	login      string
 	nick       string
@@ -59,9 +59,20 @@ func (cc ClientConnection) Start() {
 
 	go func() {
 		for {
-			entry := <-cc.regnotify
-			fmt.Printf("handling %s\n", entry.Render())
-			str := entry.payload.Command(entry.server, &cc)
+			notification := <-cc.regnotify
+			fmt.Printf("handling %b %s\n", notification.fresh, notification.Render())
+			switch t := notification.payload.(type) {
+			case *Message:
+				server, exists := cc.registrar.servers[notification.server]
+				// TODO: check that this came from this client
+				if exists && server.givenNick == t.author {
+					fmt.Printf("ignoring message from me\n")
+					continue
+				}
+			default:
+				fmt.Printf("Unmatched")
+			}
+			str := notification.payload.Command(notification.server, &cc)
 			cc.output <- ClientOut{str, "via registrar"}
 		}
 	}()
@@ -144,7 +155,7 @@ func (lisn *IRCListener) Listen() error {
 			remaddr := conn.RemoteAddr()
 			segments := strings.Split(remaddr.String(), ":")
 			fmt.Printf("Accepted incoming connection on %s\n", segments[0])
-			(ClientConnection{conn, bufio.NewReader(conn), bufio.NewWriter(conn), make(chan Entry, 100), lisn.registrar, "", "", segments[0], make(chan ClientOut, 100), false}).Start()
+			(ClientConnection{conn, bufio.NewReader(conn), bufio.NewWriter(conn), make(chan Notification, 100), lisn.registrar, "", "", segments[0], make(chan ClientOut, 100), false}).Start()
 		}
 	}()
 	return nil

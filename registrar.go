@@ -19,7 +19,7 @@ func clientChannelName(serverID rune, serverChannel string) string {
 }
 
 func (message Message) Command(server rune, cc *ClientConnection) string {
-	return fmt.Sprintf(":%s PRIVMSG %s :%s", string(server)+message.author, clientChannelName(server, message.channel), message.text)
+	return fmt.Sprintf(":%s %s %s :%s", string(server)+message.author, PRIVMSG, clientChannelName(server, message.channel), message.text)
 }
 
 type TopicSet struct {
@@ -91,9 +91,14 @@ func (join *Join) Command(server rune, cc *ClientConnection) string {
 	return fmt.Sprintf(":%s!%s@%s JOIN :%s", cc.nick, cc.login, cc.address, clientChannelName(server, join.channel))
 }
 
+type Notification struct {
+	Entry
+	fresh bool
+}
+
 type Registrar struct {
 	entries      []Entry
-	notifiers    []chan Entry
+	notifiers    []chan Notification
 	recorder     chan Entry
 	servers      map[rune]*IRCServer
 	serversMutex sync.Mutex
@@ -101,7 +106,7 @@ type Registrar struct {
 
 func CreateRegistrar() *Registrar {
 	entries := make([]Entry, 0, 100)
-	notifiers := make([]chan Entry, 0, 100)
+	notifiers := make([]chan Notification, 0, 100)
 	recorder := make(chan Entry, 100)
 	servers := make(map[rune]*IRCServer)
 	reg := &Registrar{entries: entries, notifiers: notifiers, recorder: recorder, servers: servers}
@@ -109,10 +114,11 @@ func CreateRegistrar() *Registrar {
 		for {
 			entry := <-reg.recorder
 			entry.sequenceNumber = len(reg.entries)
+			notification := Notification{entry, true}
 			fmt.Printf("recorded %s\n", entry.Render())
 			reg.entries = append(reg.entries, entry)
 			for _, notifier := range reg.notifiers {
-				notifier <- entry
+				notifier <- notification
 			}
 		}
 	}()
@@ -124,19 +130,20 @@ func (reg *Registrar) Add(server rune, payload Inspecter) {
 	reg.recorder <- Entry{0, time.Now(), server, payload}
 }
 
-func (reg *Registrar) Subscribe(notifier chan Entry) {
+func (reg *Registrar) Subscribe(notifier chan Notification) {
 	reg.notifiers = append(reg.notifiers, notifier)
 	for _, entry := range reg.entries {
-		notifier <- entry
+		notifier <- Notification{entry, false}
 	}
 }
 
 func (reg *Registrar) AddNotifier(prefix string) {
-	echonotify := make(chan Entry, 100)
+	echonotify := make(chan Notification, 100)
 	go func() {
 		for {
-			entry := <-echonotify
-			fmt.Printf("%s recorded %d:%#v\n", prefix, entry.sequenceNumber, entry.payload)
+			notification := <-echonotify
+
+			fmt.Printf("%b %s recorded %d:%#v\n", notification.fresh, prefix, notification.sequenceNumber, notification.payload)
 		}
 	}()
 	reg.Subscribe(echonotify)
