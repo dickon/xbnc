@@ -58,29 +58,29 @@ func (client *IRCClient) handleXBNCCMD(msg string) {
 }
 
 func (srv *IRCServer) handleServerCMD(msg string) {
-	serverchan := srv.client.hostToChannel(srv.Host, "")
+	//serverchan := srv.client.hostToChannel(srv.Host, "")
 	cmd := ParseMessage(msg)
 	if cmd.command == "JOIN" || cmd.command == "PART" {
 		if len(cmd.param[0]) > 0 {
 			srv.write <- cmd.command + " " + cmd.param[0]
 		} else {
-			srv.client.write <- ":-!xbnc@xbnc PRIVMSG " + serverchan + " :Usage: " + cmd.command + " <channel>"
+			//srv.client.write <- ":-!xbnc@xbnc PRIVMSG " + serverchan + " :Usage: " + cmd.command + " <channel>"
 		}
 	} else if cmd.command == "CMD" {
 		tmpcmd := strings.TrimSpace(cmd.raw[strings.Index(cmd.raw, "CMD")+4:])
 		if len(tmpcmd) > 0 {
 			srv.write <- tmpcmd
 		} else {
-			srv.client.write <- ":-!xbnc@xbnc PRIVMSG " + serverchan + " :Usage: CMD <command>"
+			//srv.client.write <- ":-!xbnc@xbnc PRIVMSG " + serverchan + " :Usage: CMD <command>"
 		}
 	} else {
 		if cmd.command != "HELP" {
-			srv.client.write <- ":-!xbnc@xbnc PRIVMSG " + serverchan + " :Command \"" + cmd.command + "\" not recognized"
+			//srv.client.write <- ":-!xbnc@xbnc PRIVMSG " + serverchan + " :Command \"" + cmd.command + "\" not recognized"
 		}
-		srv.client.write <- ":-!xbnc@xbnc PRIVMSG " + serverchan + " :Available commands:"
-		srv.client.write <- ":-!xbnc@xbnc PRIVMSG " + serverchan + " :   HELP      Display this help message"
-		srv.client.write <- ":-!xbnc@xbnc PRIVMSG " + serverchan + " :   CMD       Send a raw command to this server"
-		srv.client.write <- ":-!xbnc@xbnc PRIVMSG " + serverchan + " :   JOIN      Join a channel on this server"
-		srv.client.write <- ":-!xbnc@xbnc PRIVMSG " + serverchan + " :   PART      Part a channel on this server"
+		//srv.client.write <- ":-!xbnc@xbnc PRIVMSG " + serverchan + " :Available commands:"
+		//srv.client.write <- ":-!xbnc@xbnc PRIVMSG " + serverchan + " :   HELP      Display this help message"
+		//srv.client.write <- ":-!xbnc@xbnc PRIVMSG " + serverchan + " :   CMD       Send a raw command to this server"
+		//srv.client.write <- ":-!xbnc@xbnc PRIVMSG " + serverchan + " :   JOIN      Join a channel on this server"
+		//srv.client.write <- ":-!xbnc@xbnc PRIVMSG " + serverchan + " :   PART      Part a channel on this server"
 	}
 }

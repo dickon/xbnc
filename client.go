@@ -189,7 +189,7 @@ func (client *IRCClient) addServer(sc ServerConfig) *IRCServer {
 	if exists {
 		return server
 	}
-	srv, err := CreateServer(client.registrar, client, sc)
+	srv, err := CreateServer(client.registrar, sc)
 	if err != nil {
 		fmt.Println(err)
 		client.write <- ":-!xbnc@xbnc PRIVMSG #xbnc :Error: " + err.Error()
