@@ -44,6 +44,17 @@ type ClientConnection struct {
 	registered bool // set to true when registration is complete
 }
 
+func getServer(cchannel string, reg *Registrar) (string, *IRCServer) {
+	name := []rune(cchannel)
+	server, exists := reg.servers[name[1]]
+	sname := string(name[0]) + string(name[2:])
+	if !exists {
+		fmt.Printf("unknown server %s\n", name[1])
+		return sname, nil
+	}
+	return sname, server
+}
+
 func (cc ClientConnection) Start() {
 
 	go func() {
@@ -74,26 +85,26 @@ func (cc ClientConnection) Start() {
 				fmt.Printf("readc error: %v\n", err)
 				break
 			}
-			fmt.Printf("readc [%s]\n", str)
+			fmt.Printf("readc %v\n", str)
 
 			msg := ParseMessage(str[0 : len(str)-2])
-			fmt.Printf("got client command %s\n", msg.command)
+			fmt.Printf("got client command %v\n", msg.command)
 
 			switch msg.command {
-			case "NICK":
+			case NICK:
 				cc.nick = msg.param[0]
-			case "USER":
+			case USER:
 				cc.login = msg.param[0]
-			case "MODE":
-				name := []rune(msg.param[0])
-				server, exists := cc.registrar.servers[name[1]]
-				if !exists {
-					fmt.Printf("unknown server %s\n", name[1])
-				} else {
-					sname := string(name[0]) + string(name[2:])
-					server.write <- "MODE " + sname
+			case MODE:
+				sname, server := getServer(msg.param[0], cc.registrar)
+				if server != nil {
+					server.write <- MODE + " " + sname
 				}
-
+			case PRIVMSG:
+				sname, server := getServer(msg.param[0], cc.registrar)
+				if server != nil {
+					server.write <- PRIVMSG + " " + sname + " :" + msg.message
+				}
 			}
 			if !cc.registered && cc.nick != "" && cc.login != "" {
 				cc.Send(RPL_WELCOME, ":Welcome to XBNC "+cc.nick+"!"+cc.login+"@"+cc.address, "logged in")

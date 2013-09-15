@@ -18,6 +18,10 @@ const (
 	RPL_TOPIC         = 332
 	RPL_NAMREPLY      = 353
 	RPL_ENDOFNAMES    = 366
+	PRIVMSG           = "PRIVMSG"
+	MODE              = "MODE"
+	USER              = "USER"
+	NICK              = "NICK"
 )
 
 type IRCMessage struct {
