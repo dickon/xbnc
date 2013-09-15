@@ -165,15 +165,3 @@ func (lisn *IRCListener) Listen() error {
 	}()
 	return nil
 }
-
-/*func (lisn *IRCListener) Close() {
-  lisn.listening = false
-  if lisn.client != nil {
-    lisn.client.Close()
-    lisn.client = nil
-  }
-  if lisn.listener != nil {
-    lisn.listener.Close()
-    lisn.listener = nil
-  }
-}*/
