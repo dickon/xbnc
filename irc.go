@@ -24,6 +24,14 @@ const (
 	MODE              = "MODE"
 	USER              = "USER"
 	NICK              = "NICK"
+	JOIN              = "JOIN"
+	PART              = "PART"
+	KICK              = "KICK"
+	QUIT              = "QUIT"
+	NOTICE            = "NOTICE"
+	TOPIC             = "TOPIC"
+	CTCP_VERSION      = "CTCP_VERSION"
+	REPLY             = "REPLY"
 )
 
 type IRCMessage struct {
