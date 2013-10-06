@@ -165,100 +165,104 @@ func (srv *IRCServer) GetChannel(channel string) *IRCChannel {
 	return tmp
 }
 
+func (srv *IRCServer) processServerMessage(msg *IRCMessage) {
+	switch msg.command {
+	case PING:
+		srv.write <- "PONG :" + msg.message
+	case REPLY:
+		srv.handleReplyCode(msg)
+	case JOIN:
+		channel := srv.GetChannel(msg.param[0])
+		if msg.source == srv.givenNick {
+			srv.record(&Join{channel: msg.message})
+			srv.write <- "MODE " + msg.message
+		} else {
+			// another user joined a channel
+			fmt.Printf("message source [%s] != server nick [%s]\n", msg.source, srv.givenNick)
+			//srv.client.write <- ":" + msg.fullsource + " JOIN :" + srv.client.hostToChannel(srv.Host, msg.message)
+			channel.members[msg.message] = msg.fullsource
+		}
+	case PART:
+		if msg.source == srv.Nick {
+			_, exists := srv.channels[msg.param[0]]
+			if exists {
+				delete(srv.channels, msg.param[0])
+			}
+			//srv.client.partChannel(srv.client.hostToChannel(srv.Host, msg.param[0]))
+		} else {
+			//srv.client.write <- ":" + msg.fullsource + " PART " + srv.client.hostToChannel(srv.Host, msg.param[0]) + " :" + msg.message
+		}
+	case KICK:
+		if msg.param[1] == srv.Nick {
+			channel, exists := srv.channels[msg.param[0]]
+			if exists && channel.active {
+				channel.active = false
+				go func(srv *IRCServer, name string) {
+					time.Sleep(3 * time.Second)
+					if srv.connected {
+						channel, exists := srv.channels[name]
+						if exists && !channel.active {
+							srv.write <- "JOIN " + channel.name
+						}
+					}
+				}(srv, channel.name)
+			}
+			//srv.client.kickChannel(srv.client.hostToChannel(srv.Host, msg.param[0]), msg.message)
+		} else {
+			//srv.client.write <- ":" + msg.fullsource + " KICK " + srv.client.hostToChannel(srv.Host, msg.param[0]) + " " + msg.param[1] + " :" + msg.message
+		}
+	case QUIT:
+		//srv.client.write <- ":" + msg.fullsource + " QUIT :" + msg.message
+	case PRIVMSG:
+		name := msg.param[0]
+		if name == srv.givenNick {
+			name = msg.source
+		}
+		//channel := srv.client.hostToChannel(srv.Host, name)
+		//srv.client.joinChannel(channel, false)
+		//srv.client.write <- ":" + msg.fullsource + " PRIVMSG " + channel + " :" + msg.message
+		srv.record(&Message{name, msg.message, msg.fullsource})
+	case NOTICE:
+		//srv.client.write <- msg.raw
+		if len(srv.Ident) > 0 && msg.source == "NickServ" && strings.HasPrefix(msg.message, "This nickname is registered and protected") {
+			srv.write <- "NICKSERV IDENTIFY " + srv.Ident
+		}
+	case MODE:
+		if msg.paramlen == 4 {
+			//srv.client.write <- ":" + msg.fullsource + " MODE " + srv.client.hostToChannel(srv.Host, msg.param[0]) + " " + msg.param[1] + " " + msg.param[2] + " " + msg.param[3]
+		} else if msg.paramlen == 3 {
+			//srv.client.write <- ":" + msg.fullsource + " MODE " + srv.client.hostToChannel(srv.Host, msg.param[0]) + " " + msg.param[1] + " " + msg.param[2]
+		} else if msg.paramlen == 2 {
+			//srv.client.write <- ":" + msg.fullsource + " MODE " + srv.client.hostToChannel(srv.Host, msg.param[0]) + " " + msg.param[1]
+		} else if msg.paramlen == 1 {
+			//srv.client.write <- ":" + msg.fullsource + " MODE " + msg.param[0] + " :" + msg.message
+		} else {
+			//srv.client.write <- ":-!xbnc@xbnc PRIVMSG " + srv.client.hostToChannel(srv.Host, "") + " :" + msg.raw
+			srv.record(&Message{srv.Host, msg.raw, "mode"})
+		}
+	case NICK:
+		//srv.client.write <- msg.raw
+	case TOPIC:
+		//srv.client.write <- ":" + msg.fullsource + " TOPIC " + srv.client.hostToChannel(srv.Host, msg.param[0]) + " :" + msg.message
+		srv.record(&TopicSet{msg.param[0], msg.message, msg.fullsource})
+	case CTCP_VERSION:
+		//srv.client.write <- ":" + msg.source + "!xbnc@xbnc PRIVMSG " + srv.client.hostToChannel(srv.Host, "") + " :Received CTCP VERSION: " + msg.raw
+		srv.write <- "NOTICE " + msg.source + " :\x01XBNC 1.0: Created By xthexder\x01"
+		srv.record(&Message{"ctcp", msg.raw, "ctcp"})
+	default:
+		srv.record(&Message{srv.Host, msg.raw, "server"})
+		//srv.client.write <- ":-!xbnc@xbnc PRIVMSG " + srv.client.hostToChannel(srv.Host, "") + " :" + msg.raw
+	}
+
+}
 func (srv *IRCServer) handler() {
 	for srv.connected {
 		msg := <-srv.read
 		if msg == nil {
 			continue
 		}
+		srv.processServerMessage(msg)
 
-		switch msg.command {
-		case PING:
-			srv.write <- "PONG :" + msg.message
-		case REPLY:
-			srv.handleReplyCode(msg)
-		case JOIN:
-			channel := srv.GetChannel(msg.param[0])
-			if msg.source == srv.givenNick {
-				srv.record(&Join{channel: msg.message})
-				srv.write <- "MODE " + msg.message
-			} else {
-				// another user joined a channel
-				fmt.Printf("message source [%s] != server nick [%s]\n", msg.source, srv.givenNick)
-				//srv.client.write <- ":" + msg.fullsource + " JOIN :" + srv.client.hostToChannel(srv.Host, msg.message)
-				channel.members[msg.message] = msg.fullsource
-			}
-		case PART:
-			if msg.source == srv.Nick {
-				_, exists := srv.channels[msg.param[0]]
-				if exists {
-					delete(srv.channels, msg.param[0])
-				}
-				//srv.client.partChannel(srv.client.hostToChannel(srv.Host, msg.param[0]))
-			} else {
-				//srv.client.write <- ":" + msg.fullsource + " PART " + srv.client.hostToChannel(srv.Host, msg.param[0]) + " :" + msg.message
-			}
-		case KICK:
-			if msg.param[1] == srv.Nick {
-				channel, exists := srv.channels[msg.param[0]]
-				if exists && channel.active {
-					channel.active = false
-					go func(srv *IRCServer, name string) {
-						time.Sleep(3 * time.Second)
-						if srv.connected {
-							channel, exists := srv.channels[name]
-							if exists && !channel.active {
-								srv.write <- "JOIN " + channel.name
-							}
-						}
-					}(srv, channel.name)
-				}
-				//srv.client.kickChannel(srv.client.hostToChannel(srv.Host, msg.param[0]), msg.message)
-			} else {
-				//srv.client.write <- ":" + msg.fullsource + " KICK " + srv.client.hostToChannel(srv.Host, msg.param[0]) + " " + msg.param[1] + " :" + msg.message
-			}
-		case QUIT:
-			//srv.client.write <- ":" + msg.fullsource + " QUIT :" + msg.message
-		case PRIVMSG:
-			name := msg.param[0]
-			if name == srv.givenNick {
-				name = msg.source
-			}
-			//channel := srv.client.hostToChannel(srv.Host, name)
-			//srv.client.joinChannel(channel, false)
-			//srv.client.write <- ":" + msg.fullsource + " PRIVMSG " + channel + " :" + msg.message
-			srv.record(&Message{name, msg.message, msg.fullsource})
-		case NOTICE:
-			//srv.client.write <- msg.raw
-			if len(srv.Ident) > 0 && msg.source == "NickServ" && strings.HasPrefix(msg.message, "This nickname is registered and protected") {
-				srv.write <- "NICKSERV IDENTIFY " + srv.Ident
-			}
-		case MODE:
-			if msg.paramlen == 4 {
-				//srv.client.write <- ":" + msg.fullsource + " MODE " + srv.client.hostToChannel(srv.Host, msg.param[0]) + " " + msg.param[1] + " " + msg.param[2] + " " + msg.param[3]
-			} else if msg.paramlen == 3 {
-				//srv.client.write <- ":" + msg.fullsource + " MODE " + srv.client.hostToChannel(srv.Host, msg.param[0]) + " " + msg.param[1] + " " + msg.param[2]
-			} else if msg.paramlen == 2 {
-				//srv.client.write <- ":" + msg.fullsource + " MODE " + srv.client.hostToChannel(srv.Host, msg.param[0]) + " " + msg.param[1]
-			} else if msg.paramlen == 1 {
-				//srv.client.write <- ":" + msg.fullsource + " MODE " + msg.param[0] + " :" + msg.message
-			} else {
-				//srv.client.write <- ":-!xbnc@xbnc PRIVMSG " + srv.client.hostToChannel(srv.Host, "") + " :" + msg.raw
-				srv.record(&Message{srv.Host, msg.raw, "mode"})
-			}
-		case NICK:
-			//srv.client.write <- msg.raw
-		case TOPIC:
-			//srv.client.write <- ":" + msg.fullsource + " TOPIC " + srv.client.hostToChannel(srv.Host, msg.param[0]) + " :" + msg.message
-			srv.record(&TopicSet{msg.param[0], msg.message, msg.fullsource})
-		case CTCP_VERSION:
-			//srv.client.write <- ":" + msg.source + "!xbnc@xbnc PRIVMSG " + srv.client.hostToChannel(srv.Host, "") + " :Received CTCP VERSION: " + msg.raw
-			srv.write <- "NOTICE " + msg.source + " :\x01XBNC 1.0: Created By xthexder\x01"
-			srv.record(&Message{"ctcp", msg.raw, "ctcp"})
-		default:
-			srv.record(&Message{srv.Host, msg.raw, "server"})
-			//srv.client.write <- ":-!xbnc@xbnc PRIVMSG " + srv.client.hostToChannel(srv.Host, "") + " :" + msg.raw
-		}
 	}
 }
 
